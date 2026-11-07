@@ -1,0 +1,179 @@
+:root {
+  --bg: #0f1420;
+  --surface: #1a2133;
+  --surface-raised: #232c42;
+  --text: #e8ecf6;
+  --text-muted: #9aa6bf;
+  --accent: #4f8cff;
+  --accent-hover: #6ba0ff;
+  --success: #38d39f;
+  --danger: #ff6b6b;
+  --border: #2e3954;
+  --radius: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  background: radial-gradient(circle at top, #18213a, var(--bg) 60%);
+  color: var(--text);
+  line-height: 1.5;
+}
+
+code {
+  font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+  font-size: 0.9em;
+  color: var(--accent);
+}
+
+.header {
+  padding: 2.5rem 1.5rem 1.5rem;
+  text-align: center;
+}
+
+.header h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 0.25rem 0 1rem;
+  color: var(--text-muted);
+}
+
+.status {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  border: 1px solid var(--border);
+}
+
+.status--pending {
+  color: var(--text-muted);
+}
+
+.status--ok {
+  color: var(--success);
+  border-color: var(--success);
+}
+
+.status--error {
+  color: var(--danger);
+  border-color: var(--danger);
+}
+
+.main {
+  flex: 1;
+  width: min(960px, 100%);
+  margin: 0 auto;
+  padding: 1rem 1.5rem 2rem;
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.5rem;
+}
+
+.card h2 {
+  margin: 0 0 0.25rem;
+  font-size: 1.15rem;
+}
+
+.hint {
+  margin: 0 0 1rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.form {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.form label {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.form input {
+  width: 100%;
+  padding: 0.65rem 0.85rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+.form input:focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: transparent;
+}
+
+.form button {
+  margin-top: 0.35rem;
+  justify-self: start;
+  padding: 0.6rem 1.2rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease;
+}
+
+.form button:hover:not(:disabled) {
+  background: var(--accent-hover);
+}
+
+.form button:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.output {
+  margin: 1rem 0 0;
+  min-height: 1.5rem;
+  color: var(--success);
+  font-weight: 500;
+}
+
+.output--error {
+  color: var(--danger);
+}
+
+.output--pre {
+  padding: 0.85rem;
+  border-radius: 8px;
+  background: var(--surface-raised);
+  color: var(--text);
+  font-size: 0.85rem;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.footer {
+  padding: 1.25rem 1.5rem 2rem;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
