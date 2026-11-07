@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AscensionCleanics</title>
+  <meta name="description" content="Clean the design lab, post a before and after photo, and climb the leaderboard.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+
+  <header class="site-header">
+    <nav class="nav container" aria-label="Main">
+      <a class="brand" href="homepage.html">
+        <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M2 22h6v-6h6v-6h6V2h2v22H2z" />
+        </svg>
+        AscensionCleanics
+      </a>
+      <ul class="nav-links">
+        <li><a href="homepage.html" aria-current="page">Home</a></li>
+        <li><a href="submit.html">Submit</a></li>
+        <li><a href="leaderboard.html">Leaderboard</a></li>
+        <li id="admin-link" hidden><a href="admin.html">Admin</a></li>
+      </ul>
+      <div class="nav-auth">
+        <span id="user-name" class="user-name" hidden></span>
+        <a id="auth-btn" class="btn btn-ghost" href="login.html">Sign in</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="main">
+    <section class="hero container">
+      <div class="hero-copy">
+        <h1>Clean the lab. Climb the board.</h1>
+        <p class="lead">Tidy a corner of the design lab, post a before and after photo, and earn points once an admin approves it.</p>
+        <div class="hero-actions">
+          <a class="btn btn-primary" href="submit.html">Submit a cleanup</a>
+          <a class="btn btn-ghost" href="leaderboard.html">See full leaderboard</a>
+        </div>
+      </div>
+
+      <figure class="stairs-wrap">
+        <figcaption class="stairs-title">Top cleaners this term</figcaption>
+        <ol id="leaderboard" class="stairs" aria-live="polite">
+          <li class="stairs-status">Loading the leaderboard…</li>
+        </ol>
+      </figure>
+    </section>
+
+    <section class="section how" aria-labelledby="how-title">
+      <div class="container">
+        <h2 id="how-title">How it works</h2>
+        <ol class="steps">
+          <li>
+            <span class="step-num" aria-hidden="true">1</span>
+            <h3>Clean a spot</h3>
+            <p>Desks, the print station, the material shelf. Anywhere in the lab that needs it.</p>
+          </li>
+          <li>
+            <span class="step-num" aria-hidden="true">2</span>
+            <h3>Post before and after</h3>
+            <p>Take a photo before you start and another when you're done, then submit both.</p>
+          </li>
+          <li>
+            <span class="step-num" aria-hidden="true">3</span>
+            <h3>Earn points</h3>
+            <p>An admin checks your photos. Approved cleanups add points and move you up.</p>
+          </li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section container" aria-labelledby="recent-title">
+      <div class="section-head">
+        <h2 id="recent-title">Recent cleanups</h2>
+        <a href="leaderboard.html">View all</a>
+      </div>
+      <div id="submissions" class="submissions" aria-live="polite">
+        <p class="muted">Loading recent cleanups…</p>
+      </div>
+    </section>
+
+    <section class="cta">
+      <div class="container cta-inner">
+        <h2>Spotted a mess?</h2>
+        <p>It takes about ten minutes, and it's how you get on the board.</p>
+        <a class="btn btn-invert" href="submit.html">Submit a cleanup</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <div class="container footer-inner">
+      <span class="brand brand-small">
+        <svg class="brand-mark" viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M2 22h6v-6h6v-6h6V2h2v22H2z" />
+        </svg>
+        AscensionCleanics
+      </span>
+      <p>Built at Hackcamp to keep our design lab usable for everyone.</p>
+    </div>
+  </footer>
+
+  <script src="js/api.js"></script>
+  <script src="js/home.js"></script>
+</body>
+</html>
