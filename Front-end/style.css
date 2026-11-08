@@ -44,6 +44,7 @@ p { margin: 0 0 1rem; max-width: 62ch; }
 
 .container { width: min(1160px, 100% - 2 * var(--gutter)); margin-inline: auto; }
 .section { padding-block: clamp(3rem, 8vw, 5.5rem); }
+.section + .section { padding-top: 0; } /* stacked sections share one gap, not two */
 [hidden] { display: none !important; }
 
 .skip-link {
