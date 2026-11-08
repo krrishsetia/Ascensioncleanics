@@ -1,5 +1,6 @@
 """SQLite database initialization and connection management."""
 import sqlite3
+from datetime import datetime, timezone
 from flask import current_app, g
 
 
@@ -21,14 +22,45 @@ def close_db(e=None) -> None:
         db.close()
 
 
+def upsert_user(sub: str, name: str, email: str) -> dict:
+    """Ensure a signed-in Google user exists in the users table and return their row."""
+    db = get_db()
+    existing = db.execute("SELECT * FROM users WHERE sub = ?", (sub,)).fetchone()
+    if existing:
+        # Keep email updated, but preserve any admin-edited name and points
+        db.execute("UPDATE users SET email = ? WHERE sub = ?", (email, sub))
+        db.commit()
+        return dict(db.execute("SELECT * FROM users WHERE sub = ?", (sub,)).fetchone())
+
+    now = datetime.now(timezone.utc).isoformat()
+    db.execute(
+        """
+        INSERT INTO users (sub, name, email, points, created_at)
+        VALUES (?, ?, ?, 0, ?)
+        """,
+        (sub, name or email or "Anonymous", email or "", now),
+    )
+    db.commit()
+    return dict(db.execute("SELECT * FROM users WHERE sub = ?", (sub,)).fetchone())
+
+
 def init_db(app) -> None:
-    """Create the submissions, likes, and comments tables if they do not exist."""
+    """Create and auto-migrate all required tables."""
     app.teardown_appcontext(close_db)
 
     with app.app_context():
         db = get_db()
         db.executescript(
             """
+            CREATE TABLE IF NOT EXISTS users (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                sub TEXT UNIQUE NOT NULL,
+                name TEXT NOT NULL,
+                email TEXT,
+                points INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL
+            );
+
             CREATE TABLE IF NOT EXISTS submissions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 user_sub TEXT NOT NULL,
@@ -39,6 +71,7 @@ def init_db(app) -> None:
                 before_image_url TEXT NOT NULL,
                 after_image_url TEXT NOT NULL,
                 points INTEGER DEFAULT 10,
+                status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending', 'approved', 'rejected')),
                 created_at TEXT NOT NULL
             );
 
@@ -73,4 +106,17 @@ def init_db(app) -> None:
             );
             """
         )
+
+        # Auto-migrate existing submissions table if columns were added later
+        sub_cols = [
+            col["name"]
+            for col in db.execute("PRAGMA table_info(submissions)").fetchall()
+        ]
+        if "points" not in sub_cols:
+            db.execute("ALTER TABLE submissions ADD COLUMN points INTEGER DEFAULT 10")
+        if "status" not in sub_cols:
+            db.execute(
+                "ALTER TABLE submissions ADD COLUMN status TEXT NOT NULL DEFAULT 'pending'"
+            )
+
         db.commit()
