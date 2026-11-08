@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tasks · AscensionCleanics</title>
+    <meta
+      name="description"
+      content="Cleaning tasks assigned in the design lab, with who's doing them and when they're due."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <!-- Back end: data-auth="in" | "out", data-role="admin" | "member".
+       Admins see .admin-only elements (the assign form). -->
+  <body data-auth="out" data-role="member">
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <nav class="nav container" aria-label="Main">
+        <a class="brand" href="homepage.html">
+          <img
+            class="brand-logo"
+            src="assets/asnBlackLogo.png"
+            alt=""
+            width="40"
+            height="40"
+          />
+          AscensionCleanics
+        </a>
+        <ul class="nav-links">
+          <li><a href="homepage.html">Home</a></li>
+          <li><a href="submit.html">Submit</a></li>
+          <li><a href="posts.html">Posts</a></li>
+          <li><a href="tasks.html" aria-current="page">Tasks</a></li>
+          <li id="admin-link" hidden><a href="admin.html">Admin</a></li>
+        </ul>
+        <div class="nav-auth">
+          <span id="user-name" class="user-name" hidden></span>
+          <a id="auth-btn" class="btn btn-ghost" href="login.html">Sign in</a>
+        </div>
+      </nav>
+    </header>
+
+    <main id="main" class="container tasks-page">
+      <h1 class="page-title">Tasks</h1>
+      <p class="lead">Cleaning jobs assigned by admins, soonest deadline first.</p>
+
+      <!-- Admins only: assign a new task -->
+      <details class="assign-task admin-only">
+        <summary class="btn btn-primary">Assign a task</summary>
+        <!-- Back end: posts multipart data with these field names:
+             place, assignee, due_on (YYYY-MM-DD), points (whole number 1-100), description, photo (optional file). -->
+        <form
+          id="assign-form"
+          class="submit-form task-form"
+          action="/api/tasks"
+          method="post"
+          enctype="multipart/form-data"
+        >
+          <div class="task-form-row">
+            <div class="field">
+              <label class="field-label" for="task-place">Place</label>
+              <input id="task-place" name="place" type="text" required placeholder="e.g. Print station" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="task-assignee">Assign to</label>
+              <input id="task-assignee" name="assignee" type="text" required placeholder="Member's name" />
+            </div>
+            <div class="field">
+              <label class="field-label" for="task-due">Due</label>
+              <input id="task-due" name="due_on" type="date" required />
+            </div>
+            <div class="field">
+              <label class="field-label" for="task-points">Points</label>
+              <input id="task-points" name="points" type="number" min="1" max="100" step="1" required placeholder="10" />
+            </div>
+          </div>
+          <div class="field">
+            <label class="field-label" for="task-description">Description</label>
+            <textarea id="task-description" name="description" rows="3" maxlength="500" required placeholder="What needs doing?"></textarea>
+          </div>
+          <div class="field">
+            <label class="field-label" for="task-photo">Photo <span class="field-optional">(optional)</span></label>
+            <input id="task-photo" name="photo" type="file" accept="image/*" />
+          </div>
+          <button class="btn btn-primary submit-btn" type="submit">Assign task</button>
+        </form>
+      </details>
+
+      <!-- Sample data. Back end repeats one <article class="task"> per task, soonest due_on first.
+           Leave out .task-photo when a task has no photo.
+           .task-points shows the points the task is worth.
+           Add class "is-due-soon" to .task-due when it's due within 2 days (shows in red).
+           Status flow, set on data-status: open -> pending (member clicks Mark as done)
+           -> done (admin clicks Approve, which adds the points to the member's leaderboard total).
+           "Send back" returns a pending task to open. Done tasks get class "is-done" and go at the bottom.
+           The server must check that only the assignee can mark done and only admins can approve. -->
+      <ol id="tasks" class="task-list">
+        <li>
+          <article class="task" data-status="open">
+            <div class="task-photo">
+              <div class="ba-placeholder" role="img" aria-label="Photo of the print station (no photo yet)">No photo</div>
+            </div>
+            <div class="task-body">
+              <div class="task-head">
+                <div class="task-title">
+                  <h2 class="task-place">Print station</h2>
+                  <span class="task-points">15 pts</span>
+                </div>
+                <p class="task-due is-due-soon">Due <time datetime="2026-11-08">Nov 8, 2026</time></p>
+              </div>
+              <dl class="task-meta">
+                <div><dt>Assigned to</dt><dd>Chloe</dd></div>
+                <div><dt>Assigned by</dt><dd>Ava</dd></div>
+              </dl>
+              <details class="task-desc">
+                <summary>Show description</summary>
+                <p>Recycle the leftover prints in the tray, refill the A3 and A4 paper, and wipe down the top of the printer.</p>
+              </details>
+              <div class="task-actions">
+                <span class="task-status">To do</span>
+                <!-- Back end: render this form only for the member the task is assigned to. -->
+                <form class="auth-in-only" action="/api/tasks/1/done" method="post">
+                  <button class="btn btn-primary" type="submit">Mark as done</button>
+                </form>
+              </div>
+            </div>
+          </article>
+        </li>
+
+        <li>
+          <article class="task" data-status="pending">
+            <div class="task-body">
+              <div class="task-head">
+                <div class="task-title">
+                  <h2 class="task-place">Laser cutter</h2>
+                  <span class="task-points">20 pts</span>
+                </div>
+                <p class="task-due">Due <time datetime="2026-11-10">Nov 10, 2026</time></p>
+              </div>
+              <dl class="task-meta">
+                <div><dt>Assigned to</dt><dd>Dev</dd></div>
+                <div><dt>Assigned by</dt><dd>Ava</dd></div>
+              </dl>
+              <details class="task-desc">
+                <summary>Show description</summary>
+                <p>Empty the scrap tray, clean the honeycomb bed, and put the acrylic offcuts in the labelled bin.</p>
+              </details>
+              <div class="task-actions">
+                <span class="task-status is-pending">Waiting for approval</span>
+                <form class="admin-only" action="/api/tasks/2/approve" method="post">
+                  <button class="btn btn-primary" type="submit">Approve and give 20 pts</button>
+                </form>
+                <form class="admin-only" action="/api/tasks/2/reopen" method="post">
+                  <button class="btn btn-ghost" type="submit">Send back</button>
+                </form>
+              </div>
+            </div>
+          </article>
+        </li>
+
+        <li>
+          <article class="task" data-status="open">
+            <div class="task-photo">
+              <div class="ba-placeholder" role="img" aria-label="Photo of the material shelf (no photo yet)">No photo</div>
+            </div>
+            <div class="task-body">
+              <div class="task-head">
+                <div class="task-title">
+                  <h2 class="task-place">Material shelf</h2>
+                  <span class="task-points">25 pts</span>
+                </div>
+                <p class="task-due">Due <time datetime="2026-11-12">Nov 12, 2026</time></p>
+              </div>
+              <dl class="task-meta">
+                <div><dt>Assigned to</dt><dd>Ellis</dd></div>
+                <div><dt>Assigned by</dt><dd>Ben</dd></div>
+              </dl>
+              <details class="task-desc">
+                <summary>Show description</summary>
+                <p>Sort the foam board, card and acrylic sheets onto their own shelves and throw out anything damaged.</p>
+              </details>
+              <div class="task-actions">
+                <span class="task-status">To do</span>
+                <!-- Back end: render this form only for the member the task is assigned to. -->
+                <form class="auth-in-only" action="/api/tasks/3/done" method="post">
+                  <button class="btn btn-primary" type="submit">Mark as done</button>
+                </form>
+              </div>
+            </div>
+          </article>
+        </li>
+
+        <li>
+          <article class="task is-done" data-status="done">
+            <div class="task-body">
+              <div class="task-head">
+                <div class="task-title">
+                  <h2 class="task-place">Kitchen sink</h2>
+                  <span class="task-points">10 pts</span>
+                </div>
+                <p class="task-due">Due <time datetime="2026-11-14">Nov 14, 2026</time></p>
+              </div>
+              <dl class="task-meta">
+                <div><dt>Assigned to</dt><dd>Ben</dd></div>
+                <div><dt>Assigned by</dt><dd>Ava</dd></div>
+              </dl>
+              <details class="task-desc">
+                <summary>Show description</summary>
+                <p>Wash and put away the mugs, clear the drying rack, and wipe the counter.</p>
+              </details>
+              <div class="task-actions">
+                <span class="task-status is-done">Done, 10 pts given to Ben</span>
+              </div>
+            </div>
+          </article>
+        </li>
+      </ol>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <span class="brand brand-small">
+          <img
+            class="brand-logo brand-logo-small"
+            src="assets/asnBlackLogo.png"
+            alt=""
+            width="28"
+            height="28"
+          />
+          AscensionCleanics
+        </span>
+        <p>Built at Hackcamp to keep our design lab usable for everyone.</p>
+      </div>
+    </footer>
+
+    <!-- Back end: add your scripts here. Hooks used by this page:
+       #tasks, #assign-form, #auth-btn, #user-name, #admin-link.
+       The server must reject task creation from non-admins. Hiding the form is not enough. -->
+  </body>
+</html>
