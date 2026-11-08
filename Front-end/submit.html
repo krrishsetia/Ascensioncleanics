@@ -34,7 +34,7 @@
         <ul class="nav-links">
           <li><a href="homepage.html">Home</a></li>
           <li><a href="submit.html" aria-current="page">Submit</a></li>
-          <li><a href="leaderboard.html">History</a></li>
+          <li><a href="posts.html">Posts</a></li>
           <li id="admin-link" hidden><a href="admin.html">Admin</a></li>
         </ul>
         <div class="nav-auth">
@@ -65,6 +65,11 @@
           <legend class="field-label">Photos</legend>
 
           <label class="photo-drop" for="before-image">
+            <img
+              class="photo-preview"
+              alt="Preview of your before photo"
+              hidden
+            />
             <span class="photo-tag">Before</span>
             <span class="photo-prompt">
               <strong>Add before photo</strong>
@@ -80,6 +85,11 @@
           </label>
 
           <label class="photo-drop" for="after-image">
+            <img
+              class="photo-preview"
+              alt="Preview of your after photo"
+              hidden
+            />
             <span class="photo-tag photo-tag-after">After</span>
             <span class="photo-prompt">
               <strong>Add after photo</strong>
@@ -96,7 +106,9 @@
         </fieldset>
 
         <div class="field">
-          <label class="field-label" for="description">What did you clean?</label>
+          <label class="field-label" for="description"
+            >What did you clean?</label
+          >
           <textarea
             id="description"
             name="description"
@@ -135,6 +147,27 @@
         <p>Built at Hackcamp to keep our design lab usable for everyone.</p>
       </div>
     </footer>
+
+    <!-- Front end only: shows a preview of each chosen photo. Doesn't upload anything. -->
+    <script>
+      document.querySelectorAll(".photo-drop").forEach((tile) => {
+        const input = tile.querySelector('input[type="file"]');
+        const preview = tile.querySelector(".photo-preview");
+        input.addEventListener("change", () => {
+          if (preview.src) URL.revokeObjectURL(preview.src);
+          const file = input.files[0];
+          if (file && file.type.startsWith("image/")) {
+            preview.src = URL.createObjectURL(file);
+            preview.hidden = false;
+            tile.classList.add("has-image");
+          } else {
+            preview.removeAttribute("src");
+            preview.hidden = true;
+            tile.classList.remove("has-image");
+          }
+        });
+      });
+    </script>
 
     <!-- Back end: add your scripts here. Hooks used by this page:
        #submit-form, #before-image, #after-image, #description, #cleaned-on,
