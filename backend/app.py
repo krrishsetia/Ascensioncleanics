@@ -11,7 +11,7 @@ def create_app(env_name: str = None) -> Flask:
     if not env_name:
         env_name = os.getenv("FLASK_ENV", "default")
 
-    frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "frontend"))
+    frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "Front-end"))
     app = Flask(__name__, static_folder=frontend_dir, static_url_path="")
     app.config.from_object(config_by_name.get(env_name, config_by_name["default"]))
 
