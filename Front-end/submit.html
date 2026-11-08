@@ -184,12 +184,7 @@
     </script>
 
     <script src="auth.js"></script>
-
-    <!-- Back end: add your scripts here. Hooks used by this page:
-       #submit-form, #before-image, #after-image, #cleaner-name, #description, #cleaned-on,
-       #auth-btn, #user-name, #admin-link. -->
-
-       <script>
+    <script>
       // 1. Photo preview logic
       document.querySelectorAll(".photo-drop").forEach((tile) => {
         const input = tile.querySelector('input[type="file"]');
@@ -215,31 +210,21 @@
         dateInput.valueAsDate = new Date();
       }
 
-      // 2. Check login state and guard the submission form
+      // 2. Check login state and pre-fill #cleaner-name
       const form = document.getElementById("submit-form");
       const submitBtn = form.querySelector(".submit-btn");
-      const authBtn = document.getElementById("auth-btn");
-      const userNameEl = document.getElementById("user-name");
+      const cleanerNameInput = document.getElementById("cleaner-name");
       let isAuthenticated = false;
 
       async function checkAuth() {
         try {
           const res = await fetch("/api/auth/user", { credentials: "include" });
           if (res.ok) {
-            const data = await res.json();
+            const { user } = await res.json();
             isAuthenticated = true;
-            document.body.dataset.auth = "in";
-
-            // Show user's name and turn button into Sign out
-            userNameEl.textContent = data.user.name || data.user.email;
-            userNameEl.hidden = false;
-            authBtn.textContent = "Sign out";
-            authBtn.href = "#";
-            authBtn.onclick = async (e) => {
-              e.preventDefault();
-              await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
-              window.location.reload();
-            };
+            if (cleanerNameInput && !cleanerNameInput.value && user?.name) {
+              cleanerNameInput.value = user.name;
+            }
           } else {
             lockFormForLoggedOutUser();
           }
@@ -250,11 +235,6 @@
 
       function lockFormForLoggedOutUser() {
         isAuthenticated = false;
-        document.body.dataset.auth = "out";
-        authBtn.textContent = "Sign in";
-        authBtn.href = "/api/auth/login";
-
-        // Disable form fields and prompt user to sign in
         form.querySelectorAll("input, textarea").forEach((el) => (el.disabled = true));
         submitBtn.textContent = "Sign in with Google to submit";
       }
@@ -288,7 +268,6 @@
             return;
           }
 
-          // Redirect to posts page after successful upload
           window.location.href = "/posts.html";
         } catch (err) {
           alert("Network error while uploading submission.");
