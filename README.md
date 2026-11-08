@@ -50,9 +50,16 @@ change `API_BASE` in `frontend/js/api.js` to `http://127.0.0.1:5000/api`.
 
 | Method | Path                 | Description                          |
 | ------ | -------------------- | ------------------------------------ |
-| GET    | `/api/health`        | Liveness probe, returns status JSON  |
-| GET    | `/api/greeting?name=`| Returns `{"message": "Hello, ...!"}` |
-| POST   | `/api/echo`          | Echoes a JSON body back              |
+| Method | Path                        | Description                                    |
+| ------ | --------------------------- | ---------------------------------------------- |
+| GET    | `/api/health`               | Liveness probe, returns status JSON            |
+| GET    | `/api/greeting?name=`       | Returns `{"message": "Hello, ...!"}`           |
+| POST   | `/api/echo`                 | Echoes a JSON body back                        |
+| GET    | `/api/auth/login`           | Starts Google OAuth sign-in (redirects to Google) |
+| GET    | `/api/auth/callback`        | Google OAuth redirect handler (sets session)   |
+| GET    | `/api/auth/user`            | Returns the signed-in user or 401              |
+| POST   | `/api/auth/logout`          | Clears the session                             |
+| GET    | `/api/protected`            | Example endpoint requiring sign-in (401 else)  |
 
 Example:
 
@@ -63,6 +70,26 @@ curl -X POST http://127.0.0.1:5000/api/echo \
   -H "Content-Type: application/json" \
   -d '{"message":"hi"}'
 ```
+
+## Google Sign-In setup
+
+The app uses Google's server-side OAuth 2.0 flow, so no Google SDK is needed
+on the frontend.
+
+1. Go to the [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
+2. Create an OAuth 2.0 Client ID (Web application).
+3. Add `http://127.0.0.1:5000/api/auth/callback` as an **Authorized redirect URI**.
+4. Copy the Client ID and Client Secret into `.env` (copy from `.env.example`):
+   ```bash
+   cp .env.example .env
+   # edit .env with your GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
+   ```
+5. Generate a session secret:
+   ```bash
+   python -c "import secrets; print(secrets.token_hex(32))"
+   ```
+   and set it as `FLASK_SECRET_KEY` in `.env`.
+6. Restart the server and click **Sign in with Google**.
 
 ## Where to add things
 

@@ -1,35 +1,55 @@
-"""JSON API blueprint.
-
-Every endpoint returns JSON so the frontend can consume it with ``fetch``.
-Add your own routes here, or create additional blueprints next to this one.
-"""
-
-from flask import Blueprint, jsonify, request
+"""API Route Blueprints."""
+from datetime import datetime, timezone
+from flask import Blueprint, jsonify, request, abort
 
 api_bp = Blueprint("api", __name__)
+POSTS_DB = []
 
 
-@api_bp.get("/health")
-def health():
-    """Simple liveness probe used by the frontend to show connection status."""
-    return jsonify(status="ok", service="hackcamp-backend")
+@api_bp.route("/health", methods=["GET"])
+def health_check():
+    """Health check endpoint to verify the API is responsive."""
+    return jsonify({
+        "status": "ok",
+        "timestamp": datetime.now(timezone.utc).isoformat()
+    }), 200
 
 
-@api_bp.get("/greeting")
-def greeting():
-    """GET /api/greeting?name=Ada -> {"message": "Hello, Ada!"}"""
-    name = (request.args.get("name") or "").strip() or "World"
-    return jsonify(message=f"Hello, {name}!")
+@api_bp.route("/posts", methods=["GET"])
+def get_posts():
+    """Retrieve all submitted posts."""
+    return jsonify({
+        "status": "success",
+        "count": len(POSTS_DB),
+        "data": POSTS_DB
+    }), 200
 
 
-@api_bp.post("/echo")
-def echo():
-    """POST /api/echo with a JSON body -> echoes it back.
-
-    Demonstrates reading JSON request bodies from the frontend.
-    """
+@api_bp.route("/posts", methods=["POST"])
+def create_post():
+    """Create a new post entry."""
     payload = request.get_json(silent=True)
-    if payload is None:
-        return jsonify(error="Request body must be valid JSON"), 400
+    if not payload:
+        abort(400, description="Request body must be valid JSON.")
 
-    return jsonify(received=payload)
+    title = (payload.get("title") or "").strip()
+    content = (payload.get("content") or "").strip()
+    author = (payload.get("author") or "Anonymous").strip()
+
+    if not title or not content:
+        abort(400, description="Both 'title' and 'content' are required fields.")
+
+    new_post = {
+        "id": len(POSTS_DB) + 1,
+        "title": title,
+        "content": content,
+        "author": author,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+    }
+    POSTS_DB.append(new_post)
+
+    return jsonify({
+        "status": "success",
+        "message": "Post created successfully.",
+        "data": new_post
+    }), 201
