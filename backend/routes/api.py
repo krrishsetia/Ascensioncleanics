@@ -39,6 +39,19 @@ def _save_uploaded_image(file_storage, prefix: str) -> str:
     return f"/api/uploads/{unique_filename}"
 
 
+def _delete_uploaded_image(image_url: str | None) -> None:
+    """Remove an uploaded image file from disk if it exists."""
+    if not image_url or not image_url.startswith("/api/uploads/"):
+        return
+    filename = secure_filename(image_url.replace("/api/uploads/", "", 1))
+    file_path = os.path.join(current_app.config["UPLOAD_FOLDER"], filename)
+    try:
+        if os.path.exists(file_path):
+            os.remove(file_path)
+    except OSError as exc:
+        current_app.logger.warning("Could not delete image %s: %s", file_path, exc)
+
+
 def _is_admin(user: dict | None) -> bool:
     """Return True if the signed-in user is in ADMIN_EMAILS (or if ADMIN_EMAILS is unset in dev)."""
     if not user:
@@ -147,6 +160,7 @@ def create_submission():
     if not _allowed_file(before_file.filename) or not _allowed_file(after_file.filename):
         abort(400, description="Only image files (png, jpg, jpeg, webp, gif) are allowed.")
 
+    submitted_name = (request.form.get("name") or "").strip()[:60]
     description = (request.form.get("description") or "").strip()
     cleaned_on = (request.form.get("cleaned_on") or "").strip()
 
@@ -154,17 +168,25 @@ def create_submission():
         abort(400, description="Both 'description' and 'cleaned_on' are required.")
 
     # Ensure user exists in the users table
+    default_name = submitted_name or user.get("name") or user.get("email") or "Anonymous"
     db_user = upsert_user(
         sub=user.get("sub", "unknown"),
-        name=user.get("name") or user.get("email") or "Anonymous",
+        name=default_name,
         email=user.get("email") or "",
     )
+
+    db = get_db()
+    # If the user entered a custom name on submit.html, update their profile name too
+    cleaner_name = submitted_name or db_user["name"]
+    if submitted_name and submitted_name != db_user["name"]:
+        db.execute("UPDATE users SET name = ? WHERE sub = ?", (cleaner_name, db_user["sub"]))
+        user["name"] = cleaner_name
+        session["user"] = user
 
     before_url = _save_uploaded_image(before_file, "before")
     after_url = _save_uploaded_image(after_file, "after")
     created_at = datetime.now(timezone.utc).isoformat()
 
-    db = get_db()
     cursor = db.execute(
         """
         INSERT INTO submissions (
@@ -175,7 +197,7 @@ def create_submission():
         """,
         (
             db_user["sub"],
-            db_user["name"],
+            cleaner_name,
             db_user["email"],
             description,
             cleaned_on,
@@ -192,6 +214,38 @@ def create_submission():
             "message": "Cleanup submitted and waiting for admin approval!",
             "id": cursor.lastrowid,
         }), 201
+
+    return redirect("/posts.html")
+
+
+@api_bp.route("/posts/<int:post_id>/delete", methods=["POST"])
+def delete_post(post_id: int):
+    """Delete a post, its uploaded photos, likes, and comments (Admin only)."""
+    user = session.get("user")
+    if not _is_admin(user):
+        return jsonify({"error": "Forbidden", "message": "Only admins can delete posts."}), 403
+
+    db = get_db()
+    post = db.execute(
+        "SELECT id, before_image_url, after_image_url FROM submissions WHERE id = ?",
+        (post_id,),
+    ).fetchone()
+
+    if not post:
+        return jsonify({"error": "Not Found", "message": "Post not found."}), 404
+
+    # Remove associated likes, comments, and submission record
+    db.execute("DELETE FROM post_likes WHERE post_id = ?", (post_id,))
+    db.execute("DELETE FROM post_comments WHERE post_id = ?", (post_id,))
+    db.execute("DELETE FROM submissions WHERE id = ?", (post_id,))
+    db.commit()
+
+    # Delete physical image files from uploads directory
+    _delete_uploaded_image(post["before_image_url"])
+    _delete_uploaded_image(post["after_image_url"])
+
+    if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:
+        return jsonify({"status": "success", "deleted_id": post_id}), 200
 
     return redirect("/posts.html")
 
@@ -386,7 +440,6 @@ def approve_task(task_id: int):
 
     if task["status"] != 2:
         db.execute("UPDATE tasks SET status = 2 WHERE id = ?", (task_id,))
-        # Credit points to matching user in users table (if found by name or email)
         assignee = task["assigned_to"].strip()
         db.execute(
             """
@@ -421,14 +474,18 @@ def reopen_task(task_id: int):
 
 @api_bp.route("/tasks/<int:task_id>/delete", methods=["POST"])
 def delete_task(task_id: int):
-    """Permanently delete a task (Admin only). Points already awarded stay on the user's total."""
+    """Permanently delete a task and its photo (Admin only). Points already awarded stay on the user's total."""
     user = session.get("user")
     if not _is_admin(user):
         return jsonify({"error": "Forbidden", "message": "Only admins can delete tasks."}), 403
 
     db = get_db()
+    task = db.execute("SELECT photo_url FROM tasks WHERE id = ?", (task_id,)).fetchone()
     db.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
     db.commit()
+
+    if task and task["photo_url"]:
+        _delete_uploaded_image(task["photo_url"])
 
     if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:
         return jsonify({"status": "success"}), 200
@@ -507,7 +564,6 @@ def admin_approve_submission(sub_id: int):
             "UPDATE submissions SET status = 'approved', points = ? WHERE id = ?",
             (points, sub_id),
         )
-        # Ensure the submitter is in users table and add points to their total
         upsert_user(sub["user_sub"], sub["user_name"], sub["user_email"] or "")
         db.execute(
             "UPDATE users SET points = points + ? WHERE sub = ?",
@@ -566,7 +622,6 @@ def admin_update_user(user_id: int):
         "UPDATE users SET name = ?, points = ? WHERE id = ?",
         (name[:60], points, user_id),
     )
-    # Also update their display name on their submissions & comments
     db.execute(
         "UPDATE submissions SET user_name = ? WHERE user_sub = ?",
         (name[:60], target["sub"]),

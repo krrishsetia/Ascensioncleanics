@@ -302,61 +302,58 @@
               .join("");
           }
 
-          // 2. Render Tasks Table
+         // 2. Render Tasks Table (preserve empty-state row when 0 tasks)
           const tasksTbody = document.querySelector("#admin-tasks tbody");
-          tasksTbody.innerHTML = tasks
-            .map((t) => {
+          if (tasks.length === 0) {
+            tasksTbody.innerHTML = `<tr class="table-empty"><td colspan="6">No tasks yet.</td></tr>`;
+          } else {
+            tasksTbody.innerHTML = tasks.map((t) => {
               const isDone = t.status === 2;
-              const dueSoon = isDueSoon(t.due_on, t.status)
-                ? "is-due-soon"
-                : "";
+              const dueSoon = isDueSoon(t.due_on, t.status) ? "is-due-soon" : "";
               let statusPill = `<span class="task-status">To do</span>`;
-              if (t.status === 1)
-                statusPill = `<span class="task-status is-pending">Waiting for approval</span>`;
-              if (t.status === 2)
-                statusPill = `<span class="task-status is-done">Done</span>`;
+              if (t.status === 1) statusPill = `<span class="task-status is-pending">Waiting for approval</span>`;
+              if (t.status === 2) statusPill = `<span class="task-status is-done">Done</span>`;
 
               return `
-              <tr class="${isDone ? "is-done" : ""}">
-                <th scope="row" data-label="Place">${escapeHtml(t.task_name)}</th>
-                <td data-label="Assigned to">${escapeHtml(t.assigned_to)}</td>
-                <td data-label="Due"><time class="${dueSoon}" datetime="${escapeHtml(t.due_on)}">${formatShortDate(t.due_on)}</time></td>
-                <td data-label="Points" class="num">${t.pts_worth}</td>
-                <td data-label="Status">${statusPill}</td>
+                <tr class="${isDone ? "is-done" : ""}">
+                  <th scope="row" data-label="Place">${escapeHtml(t.task_name)}</th>
+                  <td data-label="Assigned to">${escapeHtml(t.assigned_to)}</td>
+                  <td data-label="Due"><time class="${dueSoon}" datetime="${escapeHtml(t.due_on)}">${formatShortDate(t.due_on)}</time></td>
+                  <td data-label="Points" class="num">${t.pts_worth}</td>
+                  <td data-label="Status">${statusPill}</td>
+                  <td class="row-action">
+                    <form data-admin-action="delete-task" data-task-name="${escapeHtml(t.task_name)}" action="/api/tasks/${t.id}/delete" method="post">
+                      <button class="btn btn-danger" type="submit">Delete<span class="visually-hidden"> ${escapeHtml(t.task_name)} task</span></button>
+                    </form>
+                  </td>
+                </tr>
+              `;
+            }).join("");
+          }
+
+          // 3. Render People Table (preserve empty-state row when 0 people)
+          const peopleTbody = document.querySelector("#admin-people tbody");
+          if (people.length === 0) {
+            peopleTbody.innerHTML = `<tr class="table-empty"><td colspan="4">No people yet. Anyone who signs in and submits a cleanup appears here.</td></tr>`;
+          } else {
+            peopleTbody.innerHTML = people.map((p) => `
+              <tr>
+                <td data-label="Name">
+                  <label class="visually-hidden" for="person-${p.id}-name">Name</label>
+                  <input id="person-${p.id}-name" form="person-${p.id}" name="name" type="text" value="${escapeHtml(p.name)}" maxlength="60" required />
+                </td>
+                <td data-label="Email" class="person-email">${escapeHtml(p.email || "")}</td>
+                <td data-label="Points" class="num">
+                  <label class="visually-hidden" for="person-${p.id}-points">Points for ${escapeHtml(p.name)}</label>
+                  <input id="person-${p.id}-points" form="person-${p.id}" name="points" type="number" min="0" step="1" value="${p.points}" required />
                 <td class="row-action">
-                  <form data-admin-action="delete-task" data-task-name="${escapeHtml(t.task_name)}" action="/api/tasks/${t.id}/delete" method="post">
-                    <button class="btn btn-danger" type="submit">Delete<span class="visually-hidden"> ${escapeHtml(t.task_name)} task</span></button>
+                  <form id="person-${p.id}" data-admin-action="save-user" action="/api/admin/users/${p.id}" method="post">
+                    <button class="btn btn-ghost" type="submit">Save<span class="visually-hidden"> ${escapeHtml(p.name)}</span></button>
                   </form>
                 </td>
               </tr>
-            `;
-            })
-            .join("");
-
-          // 3. Render People Table
-          const peopleTbody = document.querySelector("#admin-people tbody");
-          peopleTbody.innerHTML = people
-            .map(
-              (p) => `
-            <tr>
-              <td data-label="Name">
-                <label class="visually-hidden" for="person-${p.id}-name">Name</label>
-                <input id="person-${p.id}-name" form="person-${p.id}" name="name" type="text" value="${escapeHtml(p.name)}" maxlength="60" required />
-              </td>
-              <td data-label="Email" class="person-email">${escapeHtml(p.email || "")}</td>
-              <td data-label="Points" class="num">
-                <label class="visually-hidden" for="person-${p.id}-points">Points for ${escapeHtml(p.name)}</label>
-                <input id="person-${p.id}-points" form="person-${p.id}" name="points" type="number" min="0" step="1" value="${p.points}" required />
-              </td>
-              <td class="row-action">
-                <form id="person-${p.id}" data-admin-action="save-user" action="/api/admin/users/${p.id}" method="post">
-                  <button class="btn btn-ghost" type="submit">Save<span class="visually-hidden"> ${escapeHtml(p.name)}</span></button>
-                </form>
-              </td>
-            </tr>
-          `,
-            )
-            .join("");
+            `).join("");
+          }
         } catch (err) {
           console.error("Failed to load admin overview:", err);
         }
