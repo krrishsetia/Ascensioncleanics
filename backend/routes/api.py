@@ -1,4 +1,4 @@
-"""API Route Blueprints for submissions, leaderboard, likes, and comments."""
+"""API Route Blueprints for submissions, leaderboard, tasks, and admin management."""
 import os
 import uuid
 from datetime import datetime, timezone
@@ -13,9 +13,11 @@ from flask import (
     session,
 )
 from werkzeug.utils import secure_filename
-from db import get_db
+from db import get_db, upsert_user
 
 api_bp = Blueprint("api", __name__)
+
+STATUS_MAP = {0: "open", 1: "pending", 2: "done"}
 
 
 def _allowed_file(filename: str) -> bool:
@@ -37,6 +39,16 @@ def _save_uploaded_image(file_storage, prefix: str) -> str:
     return f"/api/uploads/{unique_filename}"
 
 
+def _is_admin(user: dict | None) -> bool:
+    """Return True if the signed-in user is in ADMIN_EMAILS (or if ADMIN_EMAILS is unset in dev)."""
+    if not user:
+        return False
+    admin_emails = current_app.config.get("ADMIN_EMAILS", [])
+    if not admin_emails:
+        return True
+    return (user.get("email") or "").lower() in admin_emails
+
+
 @api_bp.route("/health", methods=["GET"])
 def health_check():
     """Health check endpoint to verify the API is responsive."""
@@ -48,24 +60,20 @@ def health_check():
 
 @api_bp.route("/uploads/<path:filename>", methods=["GET"])
 def serve_uploaded_file(filename: str):
-    """Serve uploaded before/after cleanup images."""
+    """Serve uploaded before/after cleanup and task images."""
     return send_from_directory(current_app.config["UPLOAD_FOLDER"], filename)
 
 
 @api_bp.route("/leaderboard", methods=["GET"])
 def get_leaderboard():
-    """Return top 5 cleaners ranked by combined submission + completed task points."""
+    """Return top 5 cleaners from the users table ranked by total points."""
     db = get_db()
     rows = db.execute(
         """
-        SELECT name, SUM(points) AS points
-        FROM (
-            SELECT user_name AS name, points FROM submissions
-            UNION ALL
-            SELECT assigned_to AS name, pts_worth AS points FROM tasks WHERE status = 2
-        )
-        GROUP BY LOWER(name)
-        ORDER BY points DESC
+        SELECT name, points
+        FROM users
+        WHERE points > 0
+        ORDER BY points DESC, id ASC
         LIMIT 5
         """
     ).fetchall()
@@ -75,16 +83,17 @@ def get_leaderboard():
 @api_bp.route("/submissions", methods=["GET"])
 @api_bp.route("/posts", methods=["GET"])
 def get_submissions():
-    """Retrieve all cleanup submissions with their likes and comments, newest first."""
+    """Retrieve all APPROVED cleanup submissions with their likes and comments, newest first."""
     db = get_db()
     current_user = session.get("user")
     current_sub = current_user.get("sub") if current_user else None
 
     rows = db.execute(
         """
-        SELECT id, user_name, user_email, description, cleaned_on,
-               before_image_url, after_image_url, points, created_at
+        SELECT id, user_sub, user_name, user_email, description, cleaned_on,
+               before_image_url, after_image_url, points, status, created_at
         FROM submissions
+        WHERE status = 'approved'
         ORDER BY cleaned_on DESC, id DESC
         """
     ).fetchall()
@@ -94,14 +103,12 @@ def get_submissions():
         post = dict(row)
         post_id = post["id"]
 
-        # Count likes and check if current user liked this post
         likes = db.execute(
             "SELECT user_sub FROM post_likes WHERE post_id = ?", (post_id,)
         ).fetchall()
         post["like_count"] = len(likes)
         post["liked_by_me"] = any(r["user_sub"] == current_sub for r in likes) if current_sub else False
 
-        # Fetch comments for this post
         comments = db.execute(
             """
             SELECT id, user_name, body, created_at
@@ -123,7 +130,7 @@ def get_submissions():
 
 @api_bp.route("/submissions", methods=["POST"])
 def create_submission():
-    """Handle multipart form upload from submit.html."""
+    """Handle multipart form upload from submit.html (starts as 'pending')."""
     user = session.get("user")
     if not user:
         return jsonify({
@@ -146,6 +153,13 @@ def create_submission():
     if not description or not cleaned_on:
         abort(400, description="Both 'description' and 'cleaned_on' are required.")
 
+    # Ensure user exists in the users table
+    db_user = upsert_user(
+        sub=user.get("sub", "unknown"),
+        name=user.get("name") or user.get("email") or "Anonymous",
+        email=user.get("email") or "",
+    )
+
     before_url = _save_uploaded_image(before_file, "before")
     after_url = _save_uploaded_image(after_file, "after")
     created_at = datetime.now(timezone.utc).isoformat()
@@ -155,14 +169,14 @@ def create_submission():
         """
         INSERT INTO submissions (
             user_sub, user_name, user_email, description,
-            cleaned_on, before_image_url, after_image_url, points, created_at
+            cleaned_on, before_image_url, after_image_url, points, status, created_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, 10, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, 10, 'pending', ?)
         """,
         (
-            user.get("sub", "unknown"),
-            user.get("name") or user.get("email") or "Anonymous",
-            user.get("email"),
+            db_user["sub"],
+            db_user["name"],
+            db_user["email"],
             description,
             cleaned_on,
             before_url,
@@ -175,10 +189,8 @@ def create_submission():
     if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:
         return jsonify({
             "status": "success",
-            "message": "Cleanup submitted successfully!",
+            "message": "Cleanup submitted and waiting for admin approval!",
             "id": cursor.lastrowid,
-            "before_image_url": before_url,
-            "after_image_url": after_url,
         }), 201
 
     return redirect("/posts.html")
@@ -256,25 +268,12 @@ def add_comment(post_id: int):
 
     return redirect("/posts.html")
 
-STATUS_MAP = {0: "open", 1: "pending", 2: "done"}
 
-
-def _is_admin(user: dict | None) -> bool:
-    """Return True if the user is an admin (or if no ADMIN_EMAILS restriction is set)."""
-    if not user:
-        return False
-    admin_emails = current_app.config.get("ADMIN_EMAILS", [])
-    if not admin_emails:
-        return True
-    return (user.get("email") or "").lower() in admin_emails
-
+# ======================== TASKS ROUTES ========================
 
 @api_bp.route("/tasks", methods=["GET"])
 def get_tasks():
-    """
-    Return all tasks sorted with open/pending tasks first (by soonest due_on),
-    and finished tasks (status = 2) at the bottom.
-    """
+    """Return all tasks sorted by soonest due_on first, done tasks last."""
     db = get_db()
     rows = db.execute(
         """
@@ -301,7 +300,6 @@ def create_task():
     if not _is_admin(user):
         return jsonify({"error": "Forbidden", "message": "Only admins can assign tasks."}), 403
 
-    # Support both multipart form-data (from tasks.html) and JSON
     task_name = (request.form.get("place") or "").strip()
     assigned_to = (request.form.get("assignee") or "").strip()
     due_on = (request.form.get("due_on") or "").strip()
@@ -359,7 +357,6 @@ def mark_task_done(task_id: int):
     if not task:
         abort(404)
 
-    # Check that the signed-in user matches the assignee (case-insensitive) or is an admin
     user_name = (user.get("name") or "").strip().lower()
     user_email = (user.get("email") or "").strip().lower()
     assignee = task["assigned_to"].strip().lower()
@@ -377,14 +374,29 @@ def mark_task_done(task_id: int):
 
 @api_bp.route("/tasks/<int:task_id>/approve", methods=["POST"])
 def approve_task(task_id: int):
-    """Transition a task from pending (1) to done (2) (Admin only)."""
+    """Approve a pending task (status -> 2) and add its points to the assignee's user total."""
     user = session.get("user")
     if not _is_admin(user):
         return jsonify({"error": "Forbidden", "message": "Only admins can approve tasks."}), 403
 
     db = get_db()
-    db.execute("UPDATE tasks SET status = 2 WHERE id = ?", (task_id,))
-    db.commit()
+    task = db.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+    if not task:
+        abort(404)
+
+    if task["status"] != 2:
+        db.execute("UPDATE tasks SET status = 2 WHERE id = ?", (task_id,))
+        # Credit points to matching user in users table (if found by name or email)
+        assignee = task["assigned_to"].strip()
+        db.execute(
+            """
+            UPDATE users
+            SET points = points + ?
+            WHERE LOWER(name) = LOWER(?) OR LOWER(email) = LOWER(?)
+            """,
+            (task["pts_worth"], assignee, assignee),
+        )
+        db.commit()
 
     if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:
         return jsonify({"status": "success", "new_status": 2}), 200
@@ -405,3 +417,166 @@ def reopen_task(task_id: int):
     if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:
         return jsonify({"status": "success", "new_status": 0}), 200
     return redirect("/tasks.html")
+
+
+@api_bp.route("/tasks/<int:task_id>/delete", methods=["POST"])
+def delete_task(task_id: int):
+    """Permanently delete a task (Admin only). Points already awarded stay on the user's total."""
+    user = session.get("user")
+    if not _is_admin(user):
+        return jsonify({"error": "Forbidden", "message": "Only admins can delete tasks."}), 403
+
+    db = get_db()
+    db.execute("DELETE FROM tasks WHERE id = ?", (task_id,))
+    db.commit()
+
+    if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:
+        return jsonify({"status": "success"}), 200
+    return redirect("/admin.html#manage-tasks")
+
+
+# ======================== ADMIN ROUTES ========================
+
+@api_bp.route("/admin/overview", methods=["GET"])
+def admin_overview():
+    """Return pending submissions (oldest first), all tasks, and all users for admin.html."""
+    user = session.get("user")
+    if not _is_admin(user):
+        return jsonify({"error": "Forbidden", "message": "Admin access required."}), 403
+
+    db = get_db()
+
+    pending_rows = db.execute(
+        """
+        SELECT id, user_sub, user_name, user_email, description, cleaned_on,
+               before_image_url, after_image_url, points, status, created_at
+        FROM submissions
+        WHERE status = 'pending'
+        ORDER BY cleaned_on ASC, id ASC
+        """
+    ).fetchall()
+
+    task_rows = db.execute(
+        """
+        SELECT id, task_name, assigned_to, assigned_by, due_on,
+               pts_worth, description, photo_url, status, created_at
+        FROM tasks
+        ORDER BY (status = 2) ASC, due_on ASC, id ASC
+        """
+    ).fetchall()
+
+    people_rows = db.execute(
+        """
+        SELECT id, sub, name, email, points
+        FROM users
+        ORDER BY points DESC, name ASC
+        """
+    ).fetchall()
+
+    return jsonify({
+        "status": "success",
+        "pending_submissions": [dict(r) for r in pending_rows],
+        "tasks": [dict(r) for r in task_rows],
+        "people": [dict(r) for r in people_rows],
+    }), 200
+
+
+@api_bp.route("/admin/submissions/<int:sub_id>/approve", methods=["POST"])
+def admin_approve_submission(sub_id: int):
+    """Approve a pending submission and add points (0-100) to that person's total."""
+    user = session.get("user")
+    if not _is_admin(user):
+        return jsonify({"error": "Forbidden", "message": "Admin access required."}), 403
+
+    payload = request.get_json(silent=True) or request.form
+    pts_raw = payload.get("points", 10)
+    try:
+        points = int(pts_raw)
+        if not (0 <= points <= 100):
+            raise ValueError
+    except ValueError:
+        abort(400, description="'points' must be a whole number between 0 and 100.")
+
+    db = get_db()
+    sub = db.execute("SELECT * FROM submissions WHERE id = ?", (sub_id,)).fetchone()
+    if not sub:
+        abort(404)
+
+    if sub["status"] != "approved":
+        db.execute(
+            "UPDATE submissions SET status = 'approved', points = ? WHERE id = ?",
+            (points, sub_id),
+        )
+        # Ensure the submitter is in users table and add points to their total
+        upsert_user(sub["user_sub"], sub["user_name"], sub["user_email"] or "")
+        db.execute(
+            "UPDATE users SET points = points + ? WHERE sub = ?",
+            (points, sub["user_sub"]),
+        )
+        db.commit()
+
+    if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:
+        return jsonify({"status": "success", "id": sub_id, "points_awarded": points}), 200
+    return redirect("/admin.html#approvals")
+
+
+@api_bp.route("/admin/submissions/<int:sub_id>/reject", methods=["POST"])
+def admin_reject_submission(sub_id: int):
+    """Reject a pending submission (sets status to 'rejected', adds no points)."""
+    user = session.get("user")
+    if not _is_admin(user):
+        return jsonify({"error": "Forbidden", "message": "Admin access required."}), 403
+
+    db = get_db()
+    db.execute("UPDATE submissions SET status = 'rejected', points = 0 WHERE id = ?", (sub_id,))
+    db.commit()
+
+    if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:
+        return jsonify({"status": "success", "id": sub_id}), 200
+    return redirect("/admin.html#approvals")
+
+
+@api_bp.route("/admin/users/<int:user_id>", methods=["POST"])
+def admin_update_user(user_id: int):
+    """Update a person's name and set their total points directly."""
+    user = session.get("user")
+    if not _is_admin(user):
+        return jsonify({"error": "Forbidden", "message": "Admin access required."}), 403
+
+    payload = request.get_json(silent=True) or request.form
+    name = (payload.get("name") or "").strip()
+    pts_raw = payload.get("points", 0)
+
+    if not name:
+        abort(400, description="Name cannot be empty.")
+
+    try:
+        points = int(pts_raw)
+        if points < 0:
+            raise ValueError
+    except ValueError:
+        abort(400, description="'points' must be a whole number 0 or greater.")
+
+    db = get_db()
+    target = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    if not target:
+        abort(404)
+
+    db.execute(
+        "UPDATE users SET name = ?, points = ? WHERE id = ?",
+        (name[:60], points, user_id),
+    )
+    # Also update their display name on their submissions & comments
+    db.execute(
+        "UPDATE submissions SET user_name = ? WHERE user_sub = ?",
+        (name[:60], target["sub"]),
+    )
+    db.execute(
+        "UPDATE post_comments SET user_name = ? WHERE user_sub = ?",
+        (name[:60], target["sub"]),
+    )
+    db.commit()
+
+    if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:
+        return jsonify({"status": "success", "id": user_id, "name": name[:60], "points": points}), 200
+    return redirect("/admin.html#people")

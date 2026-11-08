@@ -4,6 +4,7 @@ from flask import Blueprint, current_app, jsonify, redirect, request, session
 from google_auth_oauthlib.flow import Flow
 from google.oauth2 import id_token
 from google.auth.transport import requests as google_requests
+from db import upsert_user
 
 # Allow plain HTTP on 127.0.0.1 and prevent scope-order mismatch exceptions
 os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
@@ -105,10 +106,17 @@ def callback():
         current_app.logger.error("ID token verification failed: %s", exc)
         return jsonify(error="Invalid ID token", details=str(exc)), 400
 
+    db_user = upsert_user(
+        sub=id_info["sub"],
+        name=id_info.get("name") or id_info.get("email") or "Anonymous",
+        email=id_info.get("email") or "",
+    )
+
     session["user"] = {
+        "id": db_user["id"],
         "sub": id_info["sub"],
-        "email": id_info.get("email"),
-        "name": id_info.get("name"),
+        "email": db_user["email"],
+        "name": db_user["name"],
         "picture": id_info.get("picture"),
         "email_verified": id_info.get("email_verified", False),
     }
@@ -124,9 +132,18 @@ def user():
     if not user_info:
         return jsonify(error="Not authenticated"), 401
 
+    # Sync with the SQLite users table so admin name/point edits reflect immediately
+    db_user = upsert_user(
+        sub=user_info["sub"],
+        name=user_info.get("name") or "Anonymous",
+        email=user_info.get("email") or "",
+    )
+    user_info["name"] = db_user["name"]
+    user_info["id"] = db_user["id"]
+    session["user"] = user_info
+
     admin_emails = current_app.config.get("ADMIN_EMAILS", [])
     user_email = (user_info.get("email") or "").lower()
-    # If ADMIN_EMAILS is not configured, default to admin so you can test all features
     is_admin = (user_email in admin_emails) if admin_emails else True
 
     return jsonify(

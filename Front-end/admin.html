@@ -357,5 +357,171 @@
          POST /api/tasks/{id}/delete
          POST /api/admin/users/{id}                 name, points
        GET /api/auth/user already returns role: "admin" | "member". -->
+
+       <script src="auth.js"></script>
+    <script>
+      function escapeHtml(str) {
+        const div = document.createElement("div");
+        div.textContent = str || "";
+        return div.innerHTML;
+      }
+
+      function formatFullDate(dateStr) {
+        const d = new Date(dateStr + "T00:00:00");
+        if (isNaN(d)) return escapeHtml(dateStr);
+        return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      }
+
+      function formatShortDate(dateStr) {
+        const d = new Date(dateStr + "T00:00:00");
+        if (isNaN(d)) return escapeHtml(dateStr);
+        return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      }
+
+      function isDueSoon(dateStr, status) {
+        if (status === 2) return false;
+        const due = new Date(dateStr + "T23:59:59");
+        const now = new Date();
+        return (due - now) / (1000 * 60 * 60 * 24) <= 2;
+      }
+
+      async function loadAdminDashboard() {
+        try {
+          // Backend checks admin session and returns 403 if not an admin
+          const res = await fetch("/api/admin/overview", { credentials: "include" });
+          if (!res.ok) return;
+          const { pending_submissions, tasks, people } = await res.json();
+
+          // Update tab counts
+          const countSpans = document.querySelectorAll(".admin-tabs .admin-count");
+          if (countSpans.length >= 3) {
+            countSpans[0].textContent = pending_submissions.length;
+            countSpans[1].textContent = tasks.length;
+            countSpans[2].textContent = people.length;
+          }
+
+          // 1. Render Pending Cleanups
+          const approvalList = document.getElementById("approval-list");
+          const emptyMsg = document.querySelector("#approvals .admin-empty");
+          if (pending_submissions.length === 0) {
+            approvalList.innerHTML = "";
+            if (emptyMsg) emptyMsg.hidden = false;
+          } else {
+            if (emptyMsg) emptyMsg.hidden = true;
+            approvalList.innerHTML = pending_submissions.map((sub) => `
+              <article class="approval" data-sub-id="${sub.id}">
+                <div class="ba-pair">
+                  <figure>
+                    <img src="${escapeHtml(sub.before_image_url)}" alt="Before cleaning by ${escapeHtml(sub.user_name)}" />
+                    <figcaption>Before</figcaption>
+                  </figure>
+                  <figure>
+                    <img src="${escapeHtml(sub.after_image_url)}" alt="After cleaning by ${escapeHtml(sub.user_name)}" />
+                    <figcaption>After</figcaption>
+                  </figure>
+                </div>
+                <div class="approval-body">
+                  <p class="sub-meta">
+                    <strong>${escapeHtml(sub.user_name)}</strong>
+                    <time datetime="${escapeHtml(sub.cleaned_on)}">${formatFullDate(sub.cleaned_on)}</time>
+                  </p>
+                  <p class="post-desc">${escapeHtml(sub.description)}</p>
+                  <div class="approval-actions">
+                    <form class="approval-approve" data-admin-action="approve-sub" action="/api/admin/submissions/${sub.id}/approve" method="post">
+                      <label class="approval-points">
+                        <span>Points</span>
+                        <input name="points" type="number" min="0" max="100" step="1" value="${sub.points ?? 10}" required />
+                      </label>
+                      <button class="btn btn-primary" type="submit">Approve</button>
+                    </form>
+                    <form data-admin-action="reject-sub" action="/api/admin/submissions/${sub.id}/reject" method="post">
+                      <button class="btn btn-ghost" type="submit">Reject</button>
+                    </form>
+                  </div>
+                </div>
+              </article>
+            `).join("");
+          }
+
+          // 2. Render Tasks Table
+          const tasksTbody = document.querySelector("#admin-tasks tbody");
+          tasksTbody.innerHTML = tasks.map((t) => {
+            const isDone = t.status === 2;
+            const dueSoon = isDueSoon(t.due_on, t.status) ? "is-due-soon" : "";
+            let statusPill = `<span class="task-status">To do</span>`;
+            if (t.status === 1) statusPill = `<span class="task-status is-pending">Waiting for approval</span>`;
+            if (t.status === 2) statusPill = `<span class="task-status is-done">Done</span>`;
+
+            return `
+              <tr class="${isDone ? "is-done" : ""}">
+                <th scope="row" data-label="Place">${escapeHtml(t.task_name)}</th>
+                <td data-label="Assigned to">${escapeHtml(t.assigned_to)}</td>
+                <td data-label="Due"><time class="${dueSoon}" datetime="${escapeHtml(t.due_on)}">${formatShortDate(t.due_on)}</time></td>
+                <td data-label="Points" class="num">${t.pts_worth}</td>
+                <td data-label="Status">${statusPill}</td>
+                <td class="row-action">
+                  <form data-admin-action="delete-task" data-task-name="${escapeHtml(t.task_name)}" action="/api/tasks/${t.id}/delete" method="post">
+                    <button class="btn btn-danger" type="submit">Delete<span class="visually-hidden"> ${escapeHtml(t.task_name)} task</span></button>
+                  </form>
+                </td>
+              </tr>
+            `;
+          }).join("");
+
+          // 3. Render People Table
+          const peopleTbody = document.querySelector("#admin-people tbody");
+          peopleTbody.innerHTML = people.map((p) => `
+            <tr>
+              <td data-label="Name">
+                <label class="visually-hidden" for="person-${p.id}-name">Name</label>
+                <input id="person-${p.id}-name" form="person-${p.id}" name="name" type="text" value="${escapeHtml(p.name)}" maxlength="60" required />
+              </td>
+              <td data-label="Email" class="person-email">${escapeHtml(p.email || "")}</td>
+              <td data-label="Points" class="num">
+                <label class="visually-hidden" for="person-${p.id}-points">Points for ${escapeHtml(p.name)}</label>
+                <input id="person-${p.id}-points" form="person-${p.id}" name="points" type="number" min="0" step="1" value="${p.points}" required />
+              </td>
+              <td class="row-action">
+                <form id="person-${p.id}" data-admin-action="save-user" action="/api/admin/users/${p.id}" method="post">
+                  <button class="btn btn-ghost" type="submit">Save<span class="visually-hidden"> ${escapeHtml(p.name)}</span></button>
+                </form>
+              </td>
+            </tr>
+          `).join("");
+        } catch (err) {
+          console.error("Failed to load admin overview:", err);
+        }
+      }
+
+      // Intercept Approve, Reject, Delete Task, and Save Person form submissions
+      document.addEventListener("submit", async (e) => {
+        const form = e.target.closest("form[data-admin-action]");
+        if (!form) return;
+        e.preventDefault();
+
+        const actionType = form.dataset.adminAction;
+        if (actionType === "delete-task") {
+          const name = form.dataset.taskName || "this";
+          if (!confirm(`Delete the ${name} task? This can't be undone.`)) return;
+        }
+
+        const formData = new FormData(form);
+        const res = await fetch(form.action, {
+          method: "POST",
+          body: formData,
+          credentials: "include",
+          headers: { Accept: "application/json" },
+        });
+
+        if (res.ok) {
+          await loadAdminDashboard();
+        } else {
+          const err = await res.json().catch(() => ({}));
+          alert(err.message || err.error || "Action failed.");
+        }
+      });
+
+      loadAdminDashboard();
+    </script>
   </body>
 </html>
