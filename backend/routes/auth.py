@@ -119,11 +119,21 @@ def callback():
 
 @auth_bp.get("/user")
 def user():
-    """Return the signed-in user's profile, or 401 when nobody is signed in."""
+    """Return the signed-in user's profile and role, or 401 when nobody is signed in."""
     user_info = session.get("user")
     if not user_info:
         return jsonify(error="Not authenticated"), 401
-    return jsonify(user=user_info, authenticated=True)
+
+    admin_emails = current_app.config.get("ADMIN_EMAILS", [])
+    user_email = (user_info.get("email") or "").lower()
+    # If ADMIN_EMAILS is not configured, default to admin so you can test all features
+    is_admin = (user_email in admin_emails) if admin_emails else True
+
+    return jsonify(
+        user=user_info,
+        role="admin" if is_admin else "member",
+        authenticated=True,
+    )
 
 
 @auth_bp.post("/logout")

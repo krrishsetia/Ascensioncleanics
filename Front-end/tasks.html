@@ -245,5 +245,195 @@
     <!-- Back end: add your scripts here. Hooks used by this page:
        #tasks, #assign-form, #auth-btn, #user-name, #admin-link.
        The server must reject task creation from non-admins. Hiding the form is not enough. -->
+
+       <script>
+      function escapeHtml(str) {
+        const div = document.createElement("div");
+        div.textContent = str || "";
+        return div.innerHTML;
+      }
+
+      function formatFullDate(dateStr) {
+        const d = new Date(dateStr + "T00:00:00");
+        if (isNaN(d)) return escapeHtml(dateStr);
+        return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      }
+
+      function isDueSoon(dateStr, status) {
+        if (status === 2) return false;
+        const due = new Date(dateStr + "T23:59:59");
+        const now = new Date();
+        const diffDays = (due - now) / (1000 * 60 * 60 * 24);
+        return diffDays <= 2;
+      }
+
+      let currentUser = null;
+      let currentRole = "member";
+
+      async function initTasksPage() {
+        const authBtn = document.getElementById("auth-btn");
+        const userNameEl = document.getElementById("user-name");
+        const adminLink = document.getElementById("admin-link");
+
+        // 1. Check Auth & Role
+        try {
+          const authRes = await fetch("/api/auth/user", { credentials: "include" });
+          if (authRes.ok) {
+            const data = await authRes.json();
+            currentUser = data.user;
+            currentRole = data.role || "member";
+
+            document.body.dataset.auth = "in";
+            document.body.dataset.role = currentRole;
+
+            if (currentRole === "admin" && adminLink) {
+              adminLink.hidden = false;
+            }
+
+            userNameEl.textContent = currentUser.name || currentUser.email;
+            userNameEl.hidden = false;
+            authBtn.textContent = "Sign out";
+            authBtn.href = "#";
+            authBtn.onclick = async (e) => {
+              e.preventDefault();
+              await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+              window.location.reload();
+            };
+          } else {
+            document.body.dataset.auth = "out";
+            document.body.dataset.role = "member";
+            authBtn.href = "/api/auth/login";
+          }
+        } catch (e) {
+          authBtn.href = "/api/auth/login";
+        }
+
+        // 2. Load Tasks from SQLite
+        await loadTasks();
+
+        // 3. Handle Assign Task Form Submission
+        const assignForm = document.getElementById("assign-form");
+        if (assignForm) {
+          assignForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const formData = new FormData(assignForm);
+            const res = await fetch("/api/tasks", {
+              method: "POST",
+              body: formData,
+              credentials: "include",
+              headers: { Accept: "application/json" },
+            });
+            if (res.ok) {
+              assignForm.reset();
+              assignForm.closest("details").open = false;
+              await loadTasks();
+            } else {
+              const err = await res.json().catch(() => ({}));
+              alert(err.message || "Failed to assign task.");
+            }
+          });
+        }
+
+        // 4. Handle Task Status Buttons (Mark as done / Approve / Send back)
+        document.getElementById("tasks").addEventListener("submit", async (e) => {
+          const form = e.target.closest("form[data-task-action]");
+          if (!form) return;
+          e.preventDefault();
+
+          const res = await fetch(form.action, {
+            method: "POST",
+            credentials: "include",
+            headers: { Accept: "application/json" },
+          });
+          if (res.ok) {
+            await loadTasks();
+          } else {
+            const err = await res.json().catch(() => ({}));
+            alert(err.message || "Action not permitted.");
+          }
+        });
+      }
+
+      async function loadTasks() {
+        const listEl = document.getElementById("tasks");
+        try {
+          const res = await fetch("/api/tasks", { credentials: "include" });
+          if (!res.ok) return;
+          const { data } = await res.json();
+          if (!data || data.length === 0) return; // Keep sample tasks if DB is empty
+
+          listEl.innerHTML = data.map((t) => {
+            const statusStr = t.status_label; // "open" | "pending" | "done"
+            const isDone = t.status === 2;
+            const dueSoonClass = isDueSoon(t.due_on, t.status) ? "is-due-soon" : "";
+
+            const photoHtml = t.photo_url
+              ? `<div class="task-photo">
+                   <img src="${escapeHtml(t.photo_url)}" alt="Photo of ${escapeHtml(t.task_name)}" />
+                 </div>`
+              : "";
+
+            // Determine action buttons based on status (0=open, 1=pending, 2=done)
+            let actionsHtml = "";
+            if (t.status === 0) {
+              actionsHtml = `
+                <span class="task-status">To do</span>
+                <form class="auth-in-only" data-task-action="done" action="/api/tasks/${t.id}/done" method="post">
+                  <button class="btn btn-primary" type="submit">Mark as done</button>
+                </form>
+              `;
+            } else if (t.status === 1) {
+              actionsHtml = `
+                <span class="task-status is-pending">Waiting for approval</span>
+                <form class="admin-only" data-task-action="approve" action="/api/tasks/${t.id}/approve" method="post">
+                  <button class="btn btn-primary" type="submit">Approve and give ${t.pts_worth} pts</button>
+                </form>
+                <form class="admin-only" data-task-action="reopen" action="/api/tasks/${t.id}/reopen" method="post">
+                  <button class="btn btn-ghost" type="submit">Send back</button>
+                </form>
+              `;
+            } else {
+              actionsHtml = `
+                <span class="task-status is-done">Done, ${t.pts_worth} pts given to ${escapeHtml(t.assigned_to)}</span>
+              `;
+            }
+
+            return `
+              <li>
+                <article class="task ${isDone ? "is-done" : ""}" data-status="${statusStr}">
+                  ${photoHtml}
+                  <div class="task-body">
+                    <div class="task-head">
+                      <div class="task-title">
+                        <h2 class="task-place">${escapeHtml(t.task_name)}</h2>
+                        <span class="task-points">${t.pts_worth} pts</span>
+                      </div>
+                      <p class="task-due ${dueSoonClass}">
+                        Due <time datetime="${escapeHtml(t.due_on)}">${formatFullDate(t.due_on)}</time>
+                      </p>
+                    </div>
+                    <dl class="task-meta">
+                      <div><dt>Assigned to</dt><dd>${escapeHtml(t.assigned_to)}</dd></div>
+                      <div><dt>Assigned by</dt><dd>${escapeHtml(t.assigned_by)}</dd></div>
+                    </dl>
+                    <details class="task-desc">
+                      <summary>Show description</summary>
+                      <p>${escapeHtml(t.description)}</p>
+                    </details>
+                    <div class="task-actions">
+                      ${actionsHtml}
+                    </div>
+                  </div>
+                </article>
+              </li>
+            `;
+          }).join("");
+        } catch (e) {
+          console.error("Failed to load tasks:", e);
+        }
+      }
+
+      initTasksPage();
+    </script>
   </body>
 </html>

@@ -58,6 +58,19 @@ def init_db(app) -> None:
                 created_at TEXT NOT NULL,
                 FOREIGN KEY (post_id) REFERENCES submissions(id) ON DELETE CASCADE
             );
+
+            CREATE TABLE IF NOT EXISTS tasks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                task_name TEXT NOT NULL,
+                assigned_to TEXT NOT NULL,
+                assigned_by TEXT NOT NULL,
+                due_on TEXT NOT NULL,
+                pts_worth INTEGER NOT NULL CHECK(pts_worth BETWEEN 1 AND 100),
+                description TEXT NOT NULL,
+                photo_url TEXT,
+                status INTEGER NOT NULL DEFAULT 0 CHECK(status IN (0, 1, 2)),
+                created_at TEXT NOT NULL
+            );
             """
         )
         db.commit()

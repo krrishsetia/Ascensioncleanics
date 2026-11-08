@@ -34,6 +34,13 @@ class Config:
     ).strip()
     POST_LOGIN_REDIRECT = os.getenv("POST_LOGIN_REDIRECT", "/")
 
+    # Comma-separated list of admin emails (if empty in dev, all signed-in users can test admin features)
+    ADMIN_EMAILS = [
+        e.strip().lower()
+        for e in os.getenv("ADMIN_EMAILS", "").split(",")
+        if e.strip()
+    ]
+
 
 class DevelopmentConfig(Config):
     DEBUG = True

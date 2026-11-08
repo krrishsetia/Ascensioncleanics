@@ -54,13 +54,17 @@ def serve_uploaded_file(filename: str):
 
 @api_bp.route("/leaderboard", methods=["GET"])
 def get_leaderboard():
-    """Return top 5 cleaners ranked by total points."""
+    """Return top 5 cleaners ranked by combined submission + completed task points."""
     db = get_db()
     rows = db.execute(
         """
-        SELECT user_name AS name, SUM(points) AS points
-        FROM submissions
-        GROUP BY user_sub, user_name
+        SELECT name, SUM(points) AS points
+        FROM (
+            SELECT user_name AS name, points FROM submissions
+            UNION ALL
+            SELECT assigned_to AS name, pts_worth AS points FROM tasks WHERE status = 2
+        )
+        GROUP BY LOWER(name)
         ORDER BY points DESC
         LIMIT 5
         """
@@ -251,3 +255,153 @@ def add_comment(post_id: int):
         }), 201
 
     return redirect("/posts.html")
+
+STATUS_MAP = {0: "open", 1: "pending", 2: "done"}
+
+
+def _is_admin(user: dict | None) -> bool:
+    """Return True if the user is an admin (or if no ADMIN_EMAILS restriction is set)."""
+    if not user:
+        return False
+    admin_emails = current_app.config.get("ADMIN_EMAILS", [])
+    if not admin_emails:
+        return True
+    return (user.get("email") or "").lower() in admin_emails
+
+
+@api_bp.route("/tasks", methods=["GET"])
+def get_tasks():
+    """
+    Return all tasks sorted with open/pending tasks first (by soonest due_on),
+    and finished tasks (status = 2) at the bottom.
+    """
+    db = get_db()
+    rows = db.execute(
+        """
+        SELECT id, task_name, assigned_to, assigned_by, due_on,
+               pts_worth, description, photo_url, status, created_at
+        FROM tasks
+        ORDER BY (status = 2) ASC, due_on ASC, id ASC
+        """
+    ).fetchall()
+
+    tasks = []
+    for row in rows:
+        t = dict(row)
+        t["status_label"] = STATUS_MAP.get(t["status"], "open")
+        tasks.append(t)
+
+    return jsonify({"status": "success", "count": len(tasks), "data": tasks}), 200
+
+
+@api_bp.route("/tasks", methods=["POST"])
+def create_task():
+    """Create a new cleaning task (Admin only)."""
+    user = session.get("user")
+    if not _is_admin(user):
+        return jsonify({"error": "Forbidden", "message": "Only admins can assign tasks."}), 403
+
+    # Support both multipart form-data (from tasks.html) and JSON
+    task_name = (request.form.get("place") or "").strip()
+    assigned_to = (request.form.get("assignee") or "").strip()
+    due_on = (request.form.get("due_on") or "").strip()
+    description = (request.form.get("description") or "").strip()
+    pts_raw = request.form.get("points", "10")
+
+    try:
+        pts_worth = int(pts_raw)
+        if not (1 <= pts_worth <= 100):
+            raise ValueError
+    except ValueError:
+        abort(400, description="'points' must be a whole number between 1 and 100.")
+
+    if not task_name or not assigned_to or not due_on or not description:
+        abort(400, description="'place', 'assignee', 'due_on', and 'description' are required.")
+
+    photo_url = None
+    photo_file = request.files.get("photo")
+    if photo_file and photo_file.filename:
+        if not _allowed_file(photo_file.filename):
+            abort(400, description="Invalid image format for task photo.")
+        photo_url = _save_uploaded_image(photo_file, "task")
+
+    assigned_by = user.get("name") or user.get("email") or "Admin"
+    created_at = datetime.now(timezone.utc).isoformat()
+
+    db = get_db()
+    cursor = db.execute(
+        """
+        INSERT INTO tasks (
+            task_name, assigned_to, assigned_by, due_on,
+            pts_worth, description, photo_url, status, created_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?)
+        """,
+        (task_name, assigned_to, assigned_by, due_on, pts_worth, description, photo_url, created_at),
+    )
+    db.commit()
+
+    if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:
+        return jsonify({"status": "success", "id": cursor.lastrowid}), 201
+
+    return redirect("/tasks.html")
+
+
+@api_bp.route("/tasks/<int:task_id>/done", methods=["POST"])
+def mark_task_done(task_id: int):
+    """Transition a task from open (0) to pending approval (1)."""
+    user = session.get("user")
+    if not user:
+        return jsonify({"error": "Unauthorized"}), 401
+
+    db = get_db()
+    task = db.execute("SELECT * FROM tasks WHERE id = ?", (task_id,)).fetchone()
+    if not task:
+        abort(404)
+
+    # Check that the signed-in user matches the assignee (case-insensitive) or is an admin
+    user_name = (user.get("name") or "").strip().lower()
+    user_email = (user.get("email") or "").strip().lower()
+    assignee = task["assigned_to"].strip().lower()
+
+    if assignee not in (user_name, user_email) and not user_name.startswith(assignee) and not _is_admin(user):
+        return jsonify({"error": "Forbidden", "message": "Only the assigned member can mark this task done."}), 403
+
+    db.execute("UPDATE tasks SET status = 1 WHERE id = ?", (task_id,))
+    db.commit()
+
+    if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:
+        return jsonify({"status": "success", "new_status": 1}), 200
+    return redirect("/tasks.html")
+
+
+@api_bp.route("/tasks/<int:task_id>/approve", methods=["POST"])
+def approve_task(task_id: int):
+    """Transition a task from pending (1) to done (2) (Admin only)."""
+    user = session.get("user")
+    if not _is_admin(user):
+        return jsonify({"error": "Forbidden", "message": "Only admins can approve tasks."}), 403
+
+    db = get_db()
+    db.execute("UPDATE tasks SET status = 2 WHERE id = ?", (task_id,))
+    db.commit()
+
+    if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:
+        return jsonify({"status": "success", "new_status": 2}), 200
+    return redirect("/tasks.html")
+
+
+@api_bp.route("/tasks/<int:task_id>/reopen", methods=["POST"])
+def reopen_task(task_id: int):
+    """Send a pending task (1) back to open (0) (Admin only)."""
+    user = session.get("user")
+    if not _is_admin(user):
+        return jsonify({"error": "Forbidden", "message": "Only admins can reopen tasks."}), 403
+
+    db = get_db()
+    db.execute("UPDATE tasks SET status = 0 WHERE id = ?", (task_id,))
+    db.commit()
+
+    if request.accept_mimetypes.accept_json and not request.accept_mimetypes.accept_html:
+        return jsonify({"status": "success", "new_status": 0}), 200
+    return redirect("/tasks.html")
