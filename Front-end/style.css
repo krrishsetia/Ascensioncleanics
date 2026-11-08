@@ -9,7 +9,7 @@
   --surface: #f3f4f6;    /* photo placeholders */
   --ease-out: cubic-bezier(.2, .8, .2, 1);
 
-  --font: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font: "Arial", system-ui, -apple-system, "Segoe UI", sans-serif;
   --wide: 125;      /* font-stretch % for display type */
   --radius: 6px;
   --gutter: 1rem;
