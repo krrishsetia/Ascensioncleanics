@@ -22,7 +22,6 @@
     <header class="site-header">
       <nav class="nav container" aria-label="Main">
         <a class="brand" href="homepage.html">
-          <!-- Placeholder: replace assets/logo-placeholder.svg with the real logo (any square image) -->
           <img
             class="brand-logo"
             src="assets/asnBlackLogo.png"
@@ -41,7 +40,9 @@
         </ul>
         <div class="nav-auth">
           <span id="user-name" class="user-name" hidden></span>
-          <a id="auth-btn" class="btn btn-ghost" href="api/auth/login">Sign in</a>
+          <a id="auth-btn" class="btn btn-ghost" href="api/auth/login"
+            >Sign in</a
+          >
         </div>
       </nav>
     </header>
@@ -51,80 +52,63 @@
       <h1 class="visually-hidden">AscensionCleanics</h1>
 
       <!-- Leaderboard -->
-      <section class="section container" aria-labelledby="lb-title">
+      <section
+        class="section container leaderboard-section"
+        aria-labelledby="lb-title"
+      >
         <div class="section-head">
-          <h2 id="lb-title">Top cleaners this term</h2>
+          <h2 id="lb-title">Best Cleaners in our Team</h2>
         </div>
-          <!-- Sample data. Back end fills this with the top 5, rank 1 first.
+        <!-- Sample data. Back end fills this with the top 5, rank 1 first.
              Each bar's --h is its height (points / top score * 78%, minimum 18%).
              --i staggers the rise animation (rank 5 = 0 ... rank 1 = 4). -->
-          <ol id="leaderboard" class="stairs">
-            <li class="step is-leader">
-              <div class="step-label">
-                <span class="step-name">Ava</span
-                ><span class="step-points">120 pts</span>
-              </div>
-              <div
-                class="step-bar"
-                style="--h: 78%; --i: 4"
-                aria-label="Rank 1"
-              >
-                1
-              </div>
-            </li>
-            <li class="step">
-              <div class="step-label">
-                <span class="step-name">Ben</span
-                ><span class="step-points">95 pts</span>
-              </div>
-              <div
-                class="step-bar"
-                style="--h: 62%; --i: 3"
-                aria-label="Rank 2"
-              >
-                2
-              </div>
-            </li>
-            <li class="step">
-              <div class="step-label">
-                <span class="step-name">Chloe</span
-                ><span class="step-points">80 pts</span>
-              </div>
-              <div
-                class="step-bar"
-                style="--h: 52%; --i: 2"
-                aria-label="Rank 3"
-              >
-                3
-              </div>
-            </li>
-            <li class="step">
-              <div class="step-label">
-                <span class="step-name">Dev</span
-                ><span class="step-points">55 pts</span>
-              </div>
-              <div
-                class="step-bar"
-                style="--h: 36%; --i: 1"
-                aria-label="Rank 4"
-              >
-                4
-              </div>
-            </li>
-            <li class="step">
-              <div class="step-label">
-                <span class="step-name">Ellis</span
-                ><span class="step-points">40 pts</span>
-              </div>
-              <div
-                class="step-bar"
-                style="--h: 26%; --i: 0"
-                aria-label="Rank 5"
-              >
-                5
-              </div>
-            </li>
-          </ol>
+        <ol id="leaderboard" class="stairs">
+          <li class="step is-leader">
+            <div class="step-label">
+              <span class="step-name">Ava</span
+              ><span class="step-points">120 pts</span>
+            </div>
+            <div class="step-bar" style="--h: 78%; --i: 4" aria-label="Rank 1">
+              1
+            </div>
+          </li>
+          <li class="step">
+            <div class="step-label">
+              <span class="step-name">Ben</span
+              ><span class="step-points">95 pts</span>
+            </div>
+            <div class="step-bar" style="--h: 62%; --i: 3" aria-label="Rank 2">
+              2
+            </div>
+          </li>
+          <li class="step">
+            <div class="step-label">
+              <span class="step-name">Chloe</span
+              ><span class="step-points">80 pts</span>
+            </div>
+            <div class="step-bar" style="--h: 52%; --i: 2" aria-label="Rank 3">
+              3
+            </div>
+          </li>
+          <li class="step">
+            <div class="step-label">
+              <span class="step-name">Dev</span
+              ><span class="step-points">55 pts</span>
+            </div>
+            <div class="step-bar" style="--h: 36%; --i: 1" aria-label="Rank 4">
+              4
+            </div>
+          </li>
+          <li class="step">
+            <div class="step-label">
+              <span class="step-name">Ellis</span
+              ><span class="step-points">40 pts</span>
+            </div>
+            <div class="step-bar" style="--h: 26%; --i: 0" aria-label="Rank 5">
+              5
+            </div>
+          </li>
+        </ol>
       </section>
 
       <section class="section container" aria-labelledby="recent-title">
@@ -242,6 +226,8 @@
         <p>Built at Hackcamp to keep our design lab usable for everyone.</p>
       </div>
     </footer>
+
+    <script src="auth.js"></script>
 
     <!-- Back end: add your scripts here. Hooks used by this page:
        #leaderboard, #submissions, #auth-btn (Sign in / Sign out),
