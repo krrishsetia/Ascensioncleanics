@@ -53,7 +53,7 @@
       </p>
 
       <!-- Back end: form posts multipart data with these field names:
-           before_image, after_image (files), description (text), cleaned_on (YYYY-MM-DD).
+           before_image, after_image (files), name (text), description (text), cleaned_on (YYYY-MM-DD).
            Change action to your Flask route. -->
       <form
         id="submit-form"
@@ -105,6 +105,19 @@
             />
           </label>
         </fieldset>
+
+        <div class="field field-name">
+          <label class="field-label" for="cleaner-name">Your name</label>
+          <input
+            id="cleaner-name"
+            name="name"
+            type="text"
+            maxlength="60"
+            autocomplete="name"
+            required
+            placeholder="e.g. Ava Chen"
+          />
+        </div>
 
         <div class="field">
           <label class="field-label" for="description"
@@ -173,7 +186,7 @@
     <script src="auth.js"></script>
 
     <!-- Back end: add your scripts here. Hooks used by this page:
-       #submit-form, #before-image, #after-image, #description, #cleaned-on,
+       #submit-form, #before-image, #after-image, #cleaner-name, #description, #cleaned-on,
        #auth-btn, #user-name, #admin-link. -->
   </body>
 </html>

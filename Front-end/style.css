@@ -3,8 +3,11 @@
   --white: #ffffff;
   --black: #000000;
   --red: #e3170a;
+  --red-deep: #a80f05;   /* top of the leader's bar */
   --grey: #5e5e5e;
   --line: #e6e6e6;
+  --surface: #f3f4f6;    /* photo placeholders */
+  --ease-out: cubic-bezier(.2, .8, .2, 1);
 
   --font: "Archivo", system-ui, -apple-system, "Segoe UI", sans-serif;
   --wide: 125;      /* font-stretch % for display type */
@@ -48,7 +51,11 @@ p { margin: 0 0 1rem; max-width: 62ch; }
 /* Home leaderboard: no rule above it, less space on top, and the bars sit
    right on the "Recent cleanups" divider below (that line is their baseline) */
 .leaderboard-section { padding-top: clamp(1.5rem, 4vw, 2.5rem); padding-bottom: 0; }
-.leaderboard-section .section-head { border-top: 0; padding-top: 0; }
+.leaderboard-section .section-head { border-top: 0; padding-top: 0; margin-bottom: clamp(1.5rem, 4vw, 2.5rem); }
+.leaderboard-section h2 {
+  font-size: clamp(2.25rem, 6vw, 4.25rem);
+  letter-spacing: -0.025em; line-height: 0.98; text-wrap: balance;
+}
 [hidden] { display: none !important; }
 
 .skip-link {
@@ -68,7 +75,9 @@ p { margin: 0 0 1rem; max-width: 62ch; }
   font-weight: 700;
   text-decoration: none;
   cursor: pointer;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease, transform 160ms ease;
 }
+.btn:active { transform: translateY(1px); }
 .btn-primary { background: var(--black); color: var(--white); }
 .btn-primary:hover { background: var(--red); border-color: var(--red); color: var(--white); }
 .btn-ghost { background: var(--white); color: var(--black); }
@@ -79,8 +88,10 @@ p { margin: 0 0 1rem; max-width: 62ch; }
 /* ---------- Header / nav ---------- */
 .site-header {
   position: sticky; top: 0; z-index: 50;
-  background: var(--white);
-  border-bottom: 2px solid var(--black);
+  background: rgb(255 255 255 / 0.86);
+  -webkit-backdrop-filter: saturate(180%) blur(12px);
+  backdrop-filter: saturate(180%) blur(12px);
+  border-bottom: 1px solid var(--line);
 }
 .nav {
   display: flex; flex-wrap: wrap; align-items: center;
@@ -97,11 +108,19 @@ p { margin: 0 0 1rem; max-width: 62ch; }
   list-style: none; margin: 0; padding: 0; flex: 1;
 }
 .nav-links a {
-  display: inline-block; padding-block: 0.35rem;
-  text-decoration: none; font-weight: 600;
-  border-bottom: 3px solid transparent;
+  position: relative; display: inline-block; padding-block: 0.35rem;
+  text-decoration: none; font-weight: 600; color: #444;
+  transition: color 160ms ease;
 }
-.nav-links a[aria-current="page"] { border-bottom-color: var(--red); }
+.nav-links a:hover, .nav-links a[aria-current="page"] { color: var(--black); }
+/* Red underline: always on the current page, slides in on hover elsewhere */
+.nav-links a::after {
+  content: ""; position: absolute; left: 0; right: 0; bottom: -2px; height: 3px;
+  border-radius: 2px; background: var(--red);
+  transform: scaleX(0); transform-origin: left;
+  transition: transform 220ms var(--ease-out);
+}
+.nav-links a:hover::after, .nav-links a[aria-current="page"]::after { transform: scaleX(1); }
 .nav-auth { display: flex; align-items: center; gap: 0.75rem; }
 .nav-auth .btn { min-height: 40px; padding: 0.4rem 1rem; }
 /* After Google sign-in: a label, not a link */
@@ -146,14 +165,22 @@ p { margin: 0 0 1rem; max-width: 62ch; }
   list-style: none; margin: 0; padding: 0;
   display: flex; flex-direction: row-reverse; /* rank 1 sits highest, on the right */
   align-items: flex-end; gap: clamp(0.75rem, 4vw, 3.5rem);
-  height: clamp(240px, 34vw, 340px);
+  height: clamp(260px, 36vw, 380px);
+  padding-inline: clamp(0rem, 2vw, 1.5rem);
+  /* faint chart grid: one line every quarter of the height */
+  background-image: linear-gradient(to bottom, #ededed 1px, transparent 1px);
+  background-size: 100% 25%;
+  animation: fade-in 600ms ease both;
 }
 .step {
   flex: 1; min-width: 0;
   display: flex; flex-direction: column; justify-content: flex-end; align-items: center;
   height: 100%;
 }
-.step-label { width: 100%; padding-bottom: 0.4rem; line-height: 1.2; text-align: center; }
+.step-label {
+  width: 100%; padding-bottom: 0.6rem; line-height: 1.2; text-align: center;
+  animation: label-in 450ms var(--ease-out) both;
+}
 .step-name {
   display: block; font-weight: 750;
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
@@ -164,18 +191,38 @@ p { margin: 0 0 1rem; max-width: 62ch; }
   width: min(100%, 5.5rem); /* skinny bars */
   background: linear-gradient(to top, var(--white), var(--red)); /* white at the bottom, red at the top */
   color: var(--white);
-  border-radius: var(--radius) var(--radius) 0 0;
+  border-radius: 10px 10px 0 0;
   display: flex; align-items: flex-start; justify-content: center;
-  padding-top: 0.5rem;
+  padding-top: 0.6rem;
   font-stretch: 125%; font-weight: 850; font-size: 1.25rem;
+  font-variant-numeric: tabular-nums;
   transform-origin: bottom;
-  animation: rise 700ms cubic-bezier(.2, .8, .2, 1) both;
+  animation: rise 800ms var(--ease-out) both;
   animation-delay: calc(var(--i, 0) * 90ms);
 }
+/* The leader: deeper red at the top, a soft red glow, and a bolder label */
+.step.is-leader .step-bar {
+  background: linear-gradient(to top, var(--white), var(--red) 62%, var(--red-deep));
+  box-shadow: 0 -12px 32px -12px rgb(227 23 10 / 0.55);
+}
+.step.is-leader .step-name { font-size: 1.15rem; }
+.step.is-leader .step-points { color: var(--red); font-weight: 700; }
 .stairs-status { align-self: center; color: var(--grey); width: 100%; }
 
+/* One load sequence: bars rise from rank 5 up to rank 1, then each name appears
+   just as its bar lands. (List order is rank 1 first, so child 5 goes first.) */
+.step:nth-child(5) .step-label { animation-delay: 420ms; }
+.step:nth-child(4) .step-label { animation-delay: 510ms; }
+.step:nth-child(3) .step-label { animation-delay: 600ms; }
+.step:nth-child(2) .step-label { animation-delay: 690ms; }
+.step:nth-child(1) .step-label { animation-delay: 780ms; }
+
 @keyframes rise { from { transform: scaleY(0); } to { transform: scaleY(1); } }
-@media (prefers-reduced-motion: reduce) { .step-bar { animation: none; } }
+@keyframes label-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) {
+  .stairs, .step-bar, .step-label { animation: none; }
+}
 
 /* ---------- How it works ---------- */
 .how { border-top: 2px solid var(--black); }
@@ -205,40 +252,65 @@ p { margin: 0 0 1rem; max-width: 62ch; }
 .section-head a { font-weight: 600; }
 
 .submissions {
-  display: grid; gap: 2rem 1.5rem;
+  display: grid; gap: 2.5rem 1.75rem;
   grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr));
 }
 .sub-card { margin: 0; }
-.ba-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
-.ba-pair figure { margin: 0; position: relative; }
+.ba-pair {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 3px;
+  border-radius: 12px; overflow: hidden; /* one rounded frame around both photos */
+  isolation: isolate;
+}
+.ba-pair figure { margin: 0; position: relative; overflow: hidden; }
 .ba-pair img, .ba-placeholder {
   width: 100%; aspect-ratio: 4 / 5; object-fit: cover;
-  background: #f2f2f2;
+  background: var(--surface);
 }
-.ba-pair figure:first-child img, .ba-pair figure:first-child .ba-placeholder { border-radius: var(--radius) 0 0 var(--radius); }
-.ba-pair figure:last-child img, .ba-pair figure:last-child .ba-placeholder { border-radius: 0 var(--radius) var(--radius) 0; }
-.ba-placeholder { display: grid; place-items: center; color: #9a9a9a; font-size: 0.85rem; }
+.ba-placeholder { display: grid; place-items: center; color: #9a9ca3; font-size: 0.85rem; }
 .ba-pair figcaption {
-  position: absolute; left: 8px; bottom: 8px;
-  background: var(--black); color: var(--white);
-  font-size: 0.8rem; font-weight: 700;
-  padding: 0.15rem 0.5rem; border-radius: 3px;
+  position: absolute; left: 10px; bottom: 10px;
+  background: rgb(0 0 0 / 0.78); color: var(--white);
+  -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px);
+  font-size: 0.75rem; font-weight: 700; letter-spacing: 0.01em;
+  padding: 0.2rem 0.6rem; border-radius: 999px;
 }
 .ba-pair figure:last-child figcaption { background: var(--red); }
 .sub-meta {
-  display: flex; justify-content: space-between; gap: 1rem;
-  margin: 0.75rem 0 0; font-size: 0.95rem; color: var(--grey);
+  display: flex; justify-content: space-between; align-items: baseline; gap: 1rem;
+  margin: 0.85rem 0 0; font-size: 0.95rem; color: var(--grey);
+  font-variant-numeric: tabular-nums;
 }
-.sub-meta strong { color: var(--black); }
+.sub-meta strong { color: var(--black); font-weight: 750; }
 
 /* ---------- Closing call to action ---------- */
-.cta { background: var(--black); color: var(--white); padding-block: clamp(3rem, 8vw, 5rem); }
-.cta-inner { display: grid; justify-items: start; gap: 0.25rem; }
-.cta h2 { margin-bottom: 0.25rem; }
-.cta p { color: #c9c9c9; margin-bottom: 1.25rem; }
+.cta {
+  position: relative; overflow: hidden;
+  background: var(--black); color: var(--white);
+  padding-block: clamp(3.5rem, 9vw, 6rem);
+}
+/* Background staircase (the "Ascension" motif): five overlapping blocks
+   anchored bottom-right, each narrower and taller than the last */
+.cta::before {
+  content: ""; position: absolute; right: 0; bottom: 0;
+  width: min(48%, 560px); height: 100%;
+  --s: rgb(255 255 255 / 0.05);
+  background:
+    linear-gradient(var(--s), var(--s)) right bottom / 100% 20% no-repeat,
+    linear-gradient(var(--s), var(--s)) right bottom / 80% 40% no-repeat,
+    linear-gradient(var(--s), var(--s)) right bottom / 60% 60% no-repeat,
+    linear-gradient(var(--s), var(--s)) right bottom / 40% 80% no-repeat,
+    linear-gradient(rgb(227 23 10 / 0.5), rgb(227 23 10 / 0.08)) right bottom / 20% 100% no-repeat;
+  pointer-events: none;
+}
+.cta-inner { position: relative; display: grid; justify-items: start; gap: 0.25rem; }
+.cta h2 { margin-bottom: 0.5rem; font-size: clamp(2rem, 4.5vw, 3.25rem); letter-spacing: -0.02em; }
+.cta p { color: #bdbdbd; margin-bottom: 1.75rem; font-size: 1.1rem; }
+.cta .btn-invert { background: var(--red); border-color: var(--red); color: var(--white); }
+.cta .btn-invert:hover { background: var(--white); border-color: var(--white); color: var(--black); }
+@media (max-width: 699px) { .cta::before { width: 70%; opacity: 0.6; } }
 
 /* ---------- Footer ---------- */
-.site-footer { padding-block: 1.75rem; color: var(--grey); font-size: 0.95rem; }
+.site-footer { padding-block: 1.75rem; color: var(--grey); font-size: 0.95rem; border-top: 1px solid var(--line); }
 .footer-inner { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 0.75rem 2rem; }
 .footer-inner p { margin: 0; }
 .brand-small { font-size: 1rem; }
@@ -254,6 +326,7 @@ p { margin: 0 0 1rem; max-width: 62ch; }
 .field-hint { margin: 0; font-size: 0.9rem; color: var(--grey); }
 
 .submit-form textarea,
+.submit-form input[type="text"],
 .submit-form input[type="date"] {
   width: 100%;
   font: inherit;
@@ -264,9 +337,12 @@ p { margin: 0 0 1rem; max-width: 62ch; }
   padding: 0.7rem 0.85rem;
 }
 .submit-form textarea { resize: vertical; min-height: 7rem; }
-.submit-form textarea::placeholder { color: #8a8a8a; }
+.submit-form textarea::placeholder,
+.submit-form input[type="text"]::placeholder { color: #8a8a8a; }
 .field-date input[type="date"] { max-width: 16rem; min-height: 48px; }
+.field-name input[type="text"] { max-width: 24rem; min-height: 48px; }
 .submit-form textarea:focus-visible,
+.submit-form input[type="text"]:focus-visible,
 .submit-form input[type="date"]:focus-visible { outline: 3px solid var(--red); outline-offset: 2px; }
 
 /* Before / after upload tiles */
