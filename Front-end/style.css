@@ -704,3 +704,26 @@ body[data-role="admin"] .admin-denied { display: none; }
   .admin-table .row-action .btn { width: 100%; }
   .people-table td[data-label="Name"], .people-table .person-email { grid-column: 1 / -1; }
 }
+
+/* ---------- Home: how points work (one line, no divider) ---------- */
+.points-rate {
+  display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.25rem 1rem;
+  margin: 0; max-width: none;
+  font-stretch: 125%; font-weight: 800; line-height: 1.1; letter-spacing: -0.02em;
+  font-size: clamp(1.35rem, 3vw, 2rem);
+}
+.points-rate-result { display: inline-flex; align-items: baseline; gap: 1rem; white-space: nowrap; } /* "= 10 points" never splits */
+.points-rate-eq { color: var(--grey); font-weight: 600; }
+
+/* ---------- Empty states (shown until the page script has real data) ---------- */
+.empty-state {
+  grid-column: 1 / -1; list-style: none;
+  margin: 0; max-width: none; padding: 2rem 1.5rem;
+  border: 1px dashed #d4d4d8; border-radius: 12px;
+  color: var(--grey); text-align: center;
+}
+.stairs .stairs-status { align-self: center; text-align: center; padding-inline: 1rem; }
+.admin-table .table-empty td { color: var(--grey); text-align: center; padding-block: 1.5rem; }
+@media (max-width: 699px) {
+  .admin-table tbody tr.table-empty { display: block; }
+}

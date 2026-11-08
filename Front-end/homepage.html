@@ -59,55 +59,11 @@
         <div class="section-head">
           <h2 id="lb-title">Best Cleaners in our Team</h2>
         </div>
-        <!-- Sample data. Back end fills this with the top 5, rank 1 first.
+        <!-- Filled by the page script with the top 5, rank 1 first. The <li> below shows until there's data.
              Each bar's --h is its height (points / top score * 78%, minimum 18%).
              --i staggers the rise animation (rank 5 = 0 ... rank 1 = 4). -->
         <ol id="leaderboard" class="stairs">
-          <li class="step is-leader">
-            <div class="step-label">
-              <span class="step-name">Ava</span
-              ><span class="step-points">120 pts</span>
-            </div>
-            <div class="step-bar" style="--h: 78%; --i: 4" aria-label="Rank 1">
-              1
-            </div>
-          </li>
-          <li class="step">
-            <div class="step-label">
-              <span class="step-name">Ben</span
-              ><span class="step-points">95 pts</span>
-            </div>
-            <div class="step-bar" style="--h: 62%; --i: 3" aria-label="Rank 2">
-              2
-            </div>
-          </li>
-          <li class="step">
-            <div class="step-label">
-              <span class="step-name">Chloe</span
-              ><span class="step-points">80 pts</span>
-            </div>
-            <div class="step-bar" style="--h: 52%; --i: 2" aria-label="Rank 3">
-              3
-            </div>
-          </li>
-          <li class="step">
-            <div class="step-label">
-              <span class="step-name">Dev</span
-              ><span class="step-points">55 pts</span>
-            </div>
-            <div class="step-bar" style="--h: 36%; --i: 1" aria-label="Rank 4">
-              4
-            </div>
-          </li>
-          <li class="step">
-            <div class="step-label">
-              <span class="step-name">Ellis</span
-              ><span class="step-points">40 pts</span>
-            </div>
-            <div class="step-bar" style="--h: 26%; --i: 0" aria-label="Rank 5">
-              5
-            </div>
-          </li>
+          <li class="stairs-status">No points yet. The top cleaners will show up here once cleanups are approved.</li>
         </ol>
       </section>
 
@@ -115,90 +71,10 @@
         <div class="section-head">
           <h2 id="recent-title">Recent cleanups</h2>
         </div>
-        <!-- Sample data. Back end repeats one <article> per submission (newest first, up to 6).
-           Swap each .ba-placeholder div for <img src="..." alt="Before cleaning by NAME"> once photos exist. -->
+        <!-- Filled by the page script with one <article class="sub-card"> per submission (newest first, up to 6).
+             The paragraph below shows until there's data. -->
         <div id="submissions" class="submissions">
-          <article class="sub-card">
-            <div class="ba-pair">
-              <figure>
-                <div
-                  class="ba-placeholder"
-                  role="img"
-                  aria-label="Before cleaning by Ava (no photo yet)"
-                >
-                  No photo
-                </div>
-                <figcaption>Before</figcaption>
-              </figure>
-              <figure>
-                <div
-                  class="ba-placeholder"
-                  role="img"
-                  aria-label="After cleaning by Ava (no photo yet)"
-                >
-                  No photo
-                </div>
-                <figcaption>After</figcaption>
-              </figure>
-            </div>
-            <p class="sub-meta">
-              <strong>Ava</strong><time datetime="2026-11-06">Nov 6</time>
-            </p>
-          </article>
-          <article class="sub-card">
-            <div class="ba-pair">
-              <figure>
-                <div
-                  class="ba-placeholder"
-                  role="img"
-                  aria-label="Before cleaning by Ben (no photo yet)"
-                >
-                  No photo
-                </div>
-                <figcaption>Before</figcaption>
-              </figure>
-              <figure>
-                <div
-                  class="ba-placeholder"
-                  role="img"
-                  aria-label="After cleaning by Ben (no photo yet)"
-                >
-                  No photo
-                </div>
-                <figcaption>After</figcaption>
-              </figure>
-            </div>
-            <p class="sub-meta">
-              <strong>Ben</strong><time datetime="2026-11-05">Nov 5</time>
-            </p>
-          </article>
-          <article class="sub-card">
-            <div class="ba-pair">
-              <figure>
-                <div
-                  class="ba-placeholder"
-                  role="img"
-                  aria-label="Before cleaning by Chloe (no photo yet)"
-                >
-                  No photo
-                </div>
-                <figcaption>Before</figcaption>
-              </figure>
-              <figure>
-                <div
-                  class="ba-placeholder"
-                  role="img"
-                  aria-label="After cleaning by Chloe (no photo yet)"
-                >
-                  No photo
-                </div>
-                <figcaption>After</figcaption>
-              </figure>
-            </div>
-            <p class="sub-meta">
-              <strong>Chloe</strong><time datetime="2026-11-04">Nov 4</time>
-            </p>
-          </article>
+          <p class="empty-state">No cleanups yet. <a href="submit.html">Submit the first one.</a></p>
         </div>
       </section>
 
@@ -210,6 +86,20 @@
         </div>
       </section>
     </main>
+
+    <!-- How points work -->
+    <section
+      class="section container points-section"
+      aria-label="How points work"
+    >
+      <p class="points-rate">
+        <span class="points-rate-from">About 10&nbsp;minutes of cleaning</span>
+        <span class="points-rate-result"
+          ><span class="points-rate-eq" aria-hidden="true">=</span>
+          <span class="points-rate-to">10&nbsp;points</span></span
+        >
+      </p>
+    </section>
 
     <footer class="site-footer">
       <div class="container footer-inner">
@@ -243,7 +133,10 @@
       function formatShortDate(dateStr) {
         const d = new Date(dateStr + "T00:00:00");
         if (isNaN(d)) return escapeHtml(dateStr);
-        return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        return d.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
       }
 
       async function initHomepage() {
@@ -252,7 +145,9 @@
 
         // 1. Check Auth Status
         try {
-          const authRes = await fetch("/api/auth/user", { credentials: "include" });
+          const authRes = await fetch("/api/auth/user", {
+            credentials: "include",
+          });
           if (authRes.ok) {
             const { user } = await authRes.json();
             document.body.dataset.auth = "in";
@@ -262,7 +157,10 @@
             authBtn.href = "#";
             authBtn.onclick = async (e) => {
               e.preventDefault();
-              await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+              await fetch("/api/auth/logout", {
+                method: "POST",
+                credentials: "include",
+              });
               window.location.reload();
             };
           } else {
@@ -279,7 +177,10 @@
             const { data } = await subRes.json();
             if (data && data.length > 0) {
               const container = document.getElementById("submissions");
-              container.innerHTML = data.slice(0, 6).map((item) => `
+              container.innerHTML = data
+                .slice(0, 6)
+                .map(
+                  (item) => `
                 <article class="sub-card">
                   <div class="ba-pair">
                     <figure>
@@ -296,7 +197,9 @@
                     <time datetime="${escapeHtml(item.cleaned_on)}">${formatShortDate(item.cleaned_on)}</time>
                   </p>
                 </article>
-              `).join("");
+              `,
+                )
+                .join("");
             }
           }
         } catch (e) {
@@ -311,11 +214,15 @@
             if (data && data.length > 0) {
               const lbEl = document.getElementById("leaderboard");
               const topScore = Math.max(...data.map((u) => u.points), 10);
-              lbEl.innerHTML = data.map((u, idx) => {
-                const rank = idx + 1;
-                const heightPct = Math.max(18, Math.round((u.points / topScore) * 78));
-                const animIdx = Math.max(0, 4 - idx);
-                return `
+              lbEl.innerHTML = data
+                .map((u, idx) => {
+                  const rank = idx + 1;
+                  const heightPct = Math.max(
+                    18,
+                    Math.round((u.points / topScore) * 78),
+                  );
+                  const animIdx = Math.max(0, 4 - idx);
+                  return `
                   <li class="step ${rank === 1 ? "is-leader" : ""}">
                     <div class="step-label">
                       <span class="step-name">${escapeHtml(u.name)}</span>
@@ -326,7 +233,8 @@
                     </div>
                   </li>
                 `;
-              }).join("");
+                })
+                .join("");
             }
           }
         } catch (e) {
@@ -336,6 +244,5 @@
 
       initHomepage();
     </script>
-
   </body>
 </html>

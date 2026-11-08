@@ -93,7 +93,8 @@
         </form>
       </details>
 
-      <!-- Sample data. Back end repeats one <article class="task"> per task, soonest due_on first.
+      <!-- Filled by the page script with one <li><article class="task"> per task, soonest due_on first.
+           The <li> below shows until there are tasks.
            Leave out .task-photo when a task has no photo.
            .task-points shows the points the task is worth.
            Add class "is-due-soon" to .task-due when it's due within 2 days (shows in red).
@@ -102,125 +103,7 @@
            "Send back" returns a pending task to open. Done tasks get class "is-done" and go at the bottom.
            The server must check that only the assignee can mark done and only admins can approve. -->
       <ol id="tasks" class="task-list">
-        <li>
-          <article class="task" data-status="open">
-            <div class="task-photo">
-              <div class="ba-placeholder" role="img" aria-label="Photo of the print station (no photo yet)">No photo</div>
-            </div>
-            <div class="task-body">
-              <div class="task-head">
-                <div class="task-title">
-                  <h2 class="task-place">Print station</h2>
-                  <span class="task-points">15 pts</span>
-                </div>
-                <p class="task-due is-due-soon">Due <time datetime="2026-11-08">Nov 8, 2026</time></p>
-              </div>
-              <dl class="task-meta">
-                <div><dt>Assigned to</dt><dd>Chloe</dd></div>
-                <div><dt>Assigned by</dt><dd>Ava</dd></div>
-              </dl>
-              <details class="task-desc">
-                <summary>Show description</summary>
-                <p>Recycle the leftover prints in the tray, refill the A3 and A4 paper, and wipe down the top of the printer.</p>
-              </details>
-              <div class="task-actions">
-                <span class="task-status">To do</span>
-                <!-- Back end: render this form only for the member the task is assigned to. -->
-                <form class="auth-in-only" action="/api/tasks/1/done" method="post">
-                  <button class="btn btn-primary" type="submit">Mark as done</button>
-                </form>
-              </div>
-            </div>
-          </article>
-        </li>
-
-        <li>
-          <article class="task" data-status="pending">
-            <div class="task-body">
-              <div class="task-head">
-                <div class="task-title">
-                  <h2 class="task-place">Laser cutter</h2>
-                  <span class="task-points">20 pts</span>
-                </div>
-                <p class="task-due">Due <time datetime="2026-11-10">Nov 10, 2026</time></p>
-              </div>
-              <dl class="task-meta">
-                <div><dt>Assigned to</dt><dd>Dev</dd></div>
-                <div><dt>Assigned by</dt><dd>Ava</dd></div>
-              </dl>
-              <details class="task-desc">
-                <summary>Show description</summary>
-                <p>Empty the scrap tray, clean the honeycomb bed, and put the acrylic offcuts in the labelled bin.</p>
-              </details>
-              <div class="task-actions">
-                <span class="task-status is-pending">Waiting for approval</span>
-                <form class="admin-only" action="/api/tasks/2/approve" method="post">
-                  <button class="btn btn-primary" type="submit">Approve and give 20 pts</button>
-                </form>
-                <form class="admin-only" action="/api/tasks/2/reopen" method="post">
-                  <button class="btn btn-ghost" type="submit">Send back</button>
-                </form>
-              </div>
-            </div>
-          </article>
-        </li>
-
-        <li>
-          <article class="task" data-status="open">
-            <div class="task-photo">
-              <div class="ba-placeholder" role="img" aria-label="Photo of the material shelf (no photo yet)">No photo</div>
-            </div>
-            <div class="task-body">
-              <div class="task-head">
-                <div class="task-title">
-                  <h2 class="task-place">Material shelf</h2>
-                  <span class="task-points">25 pts</span>
-                </div>
-                <p class="task-due">Due <time datetime="2026-11-12">Nov 12, 2026</time></p>
-              </div>
-              <dl class="task-meta">
-                <div><dt>Assigned to</dt><dd>Ellis</dd></div>
-                <div><dt>Assigned by</dt><dd>Ben</dd></div>
-              </dl>
-              <details class="task-desc">
-                <summary>Show description</summary>
-                <p>Sort the foam board, card and acrylic sheets onto their own shelves and throw out anything damaged.</p>
-              </details>
-              <div class="task-actions">
-                <span class="task-status">To do</span>
-                <!-- Back end: render this form only for the member the task is assigned to. -->
-                <form class="auth-in-only" action="/api/tasks/3/done" method="post">
-                  <button class="btn btn-primary" type="submit">Mark as done</button>
-                </form>
-              </div>
-            </div>
-          </article>
-        </li>
-
-        <li>
-          <article class="task is-done" data-status="done">
-            <div class="task-body">
-              <div class="task-head">
-                <div class="task-title">
-                  <h2 class="task-place">Kitchen sink</h2>
-                  <span class="task-points">10 pts</span>
-                </div>
-                <p class="task-due">Due <time datetime="2026-11-14">Nov 14, 2026</time></p>
-              </div>
-              <dl class="task-meta">
-                <div><dt>Assigned to</dt><dd>Ben</dd></div>
-                <div><dt>Assigned by</dt><dd>Ava</dd></div>
-              </dl>
-              <details class="task-desc">
-                <summary>Show description</summary>
-                <p>Wash and put away the mugs, clear the drying rack, and wipe the counter.</p>
-              </details>
-              <div class="task-actions">
-                <span class="task-status is-done">Done, 10 pts given to Ben</span>
-              </div>
-            </div>
-          </article>
-        </li>
+        <li class="empty-state">No tasks yet. Tasks an admin assigns will show up here.</li>
       </ol>
     </main>
 
@@ -360,7 +243,7 @@
           const res = await fetch("/api/tasks", { credentials: "include" });
           if (!res.ok) return;
           const { data } = await res.json();
-          if (!data || data.length === 0) return; // Keep sample tasks if DB is empty
+          if (!data || data.length === 0) return; // keep the "No tasks yet" message
 
           listEl.innerHTML = data.map((t) => {
             const statusStr = t.status_label; // "open" | "pending" | "done"

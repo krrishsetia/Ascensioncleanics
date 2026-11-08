@@ -79,11 +79,9 @@ on the frontend.
 1. Go to the [Google Cloud Console](https://console.cloud.google.com/apis/credentials).
 2. Create an OAuth 2.0 Client ID (Web application).
 3. Add `http://127.0.0.1:5000/api/auth/callback` as an **Authorized redirect URI**.
-4. Copy the Client ID and Client Secret into `.env` (copy from `.env.example`):
-   ```bash
-   cp .env.example .env
-   # edit .env with your GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET
-   ```
+4. Create a `.env` file in the repository root (see
+   [Environment variables](#environment-variables-env) below) and put the
+   Client ID and Client Secret in `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
 5. Generate a session secret:
    ```bash
    python -c "import secrets; print(secrets.token_hex(32))"
@@ -91,11 +89,58 @@ on the frontend.
    and set it as `FLASK_SECRET_KEY` in `.env`.
 6. Restart the server and click **Sign in with Google**.
 
+## Environment variables (`.env`)
+
+All settings live in one `.env` file in the repository root (next to this
+README). `backend/config.py` loads it when the server starts. `.env` is
+gitignored, so each person keeps their own copy and real secrets never go in
+this file or in git.
+
+Copy this into `.env` and fill in the values marked `<...>`:
+
+```ini
+# Server
+HOST=127.0.0.1
+PORT=5000
+FLASK_DEBUG=1
+
+# Session cookie signing key (make one with:
+#   python -c "import secrets; print(secrets.token_hex(32))")
+FLASK_SECRET_KEY=<random 64-character hex string>
+
+# Google sign-in (from Google Cloud Console > Credentials > OAuth 2.0 Client ID)
+GOOGLE_CLIENT_ID=<your-client-id>.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=<your-client-secret>
+GOOGLE_REDIRECT_URI=http://127.0.0.1:5000/api/auth/callback
+
+# Where to send people after they sign in
+POST_LOGIN_REDIRECT=/
+
+# Who can use the Admin page (comma-separated Google emails)
+ADMIN_EMAILS=<you@gmail.com>,<teammate@gmail.com>
+```
+
+| Variable | Required | Default | What it does |
+| --- | --- | --- | --- |
+| `HOST` | No | `127.0.0.1` | Address the server listens on. (`FLASK_HOST` also works.) |
+| `PORT` | No | `5000` | Port the server listens on. (`FLASK_PORT` also works.) |
+| `FLASK_DEBUG` | No | `0` | `1` turns on debug mode and auto-reload. Use `0` when the site is shared. |
+| `FLASK_SECRET_KEY` | Yes | a fixed dev key | Signs the session cookie that keeps people signed in. Keep it secret and random. (`SECRET_KEY` also works.) |
+| `GOOGLE_CLIENT_ID` | Yes | none | OAuth client ID for "Sign in with Google". Without it, `/api/auth/login` returns an error. |
+| `GOOGLE_CLIENT_SECRET` | Yes | none | OAuth client secret that goes with the client ID. Keep it secret. |
+| `GOOGLE_REDIRECT_URI` | No | `http://HOST:PORT/api/auth/callback` | Where Google sends people back after sign-in. Must exactly match an Authorized redirect URI in Google Cloud Console. |
+| `POST_LOGIN_REDIRECT` | No | `/` | Page to open after a successful sign-in. |
+| `ADMIN_EMAILS` | Yes, before sharing the site | empty | Comma-separated emails that get the Admin page. **If it's empty, every signed-in user is treated as an admin** (handy for testing, unsafe for real use). |
+| `CORS_ORIGINS` | No | `http://HOST:PORT` | Other sites allowed to call `/api/*`. Only needed if the front end runs on a different server. |
+| `DATABASE_PATH` | No | `backend/cleanics.db` | Where the SQLite database file is stored. |
+| `UPLOAD_FOLDER` | No | `backend/uploads` | Where uploaded before/after photos are saved. |
+| `FLASK_ENV` | No | `default` (development) | `production` turns off debug and makes the session cookie HTTPS-only. |
+
 ## Where to add things
 
 - **New endpoint:** add a route in `backend/routes/api.py` (or a new blueprint
   in `backend/routes/` and register it in `create_app`).
 - **New API call:** add a small function in `frontend/js/api.js`, then call it
   from `frontend/js/app.js`.
-- **Config:** environment variables `HOST`, `PORT`, and `FLASK_DEBUG` are read
-  in `backend/app.py`. See `.env.example`.
+- **Config:** environment variables are read in `backend/config.py`. See
+  [Environment variables](#environment-variables-env).
