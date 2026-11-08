@@ -1,0 +1,361 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Admin · AscensionCleanics</title>
+    <meta
+      name="description"
+      content="Approve cleanups, delete tasks, and edit people's names and points."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,400..900&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <!-- auth.js sets data-auth="in" and data-role="admin" (when /api/auth/user returns role: "admin").
+       Non-admins only see the "admins only" message. To preview the page without the back end,
+       change data-role="member" to data-role="admin" below (don't commit that). -->
+  <body data-auth="out" data-role="member">
+    <a class="skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+      <nav class="nav container" aria-label="Main">
+        <a class="brand" href="homepage.html">
+          <img
+            class="brand-logo"
+            src="assets/asnBlackLogo.png"
+            alt=""
+            width="40"
+            height="40"
+          />
+          AscensionCleanics
+        </a>
+        <ul class="nav-links">
+          <li><a href="homepage.html">Home</a></li>
+          <li><a href="submit.html">Submit</a></li>
+          <li><a href="posts.html">Posts</a></li>
+          <li><a href="tasks.html">Tasks</a></li>
+          <li id="admin-link" hidden><a href="admin.html" aria-current="page">Admin</a></li>
+        </ul>
+        <div class="nav-auth">
+          <span id="user-name" class="user-name" hidden></span>
+          <a id="auth-btn" class="btn btn-ghost" href="api/auth/login">Sign in</a>
+        </div>
+      </nav>
+    </header>
+
+    <main id="main" class="container admin-page">
+      <h1 class="page-title">Admin</h1>
+
+      <p class="admin-denied">
+        This page is for admins. Sign in with an admin Google account to approve
+        cleanups, manage tasks and edit people.
+      </p>
+
+      <div class="admin-only">
+        <p class="lead">Approve cleanups, delete tasks, and fix people's names and points.</p>
+
+        <!-- Jump links. Back end: put the real counts in .admin-count. -->
+        <nav class="admin-tabs" aria-label="Admin sections">
+          <a href="#approvals">Cleanups to approve <span class="admin-count">2</span></a>
+          <a href="#manage-tasks">Tasks <span class="admin-count">4</span></a>
+          <a href="#people">People <span class="admin-count">5</span></a>
+        </nav>
+
+        <!-- ============ 1. Approve cleanups ============ -->
+        <section id="approvals" class="admin-section" aria-labelledby="approvals-title">
+          <div class="section-head">
+            <h2 id="approvals-title">Cleanups to approve</h2>
+          </div>
+          <!-- Sample data. Back end repeats one <article class="approval"> per submission with status "pending", oldest first.
+               Approve: POST /api/admin/submissions/{id}/approve, field points (whole number 0-100, default 10).
+                        Sets status to "approved" and adds the points to that person's total.
+               Reject:  POST /api/admin/submissions/{id}/reject. Sets status to "rejected" (no points).
+               Note: submissions don't have a status yet. They need a status column (pending / approved / rejected),
+               new ones should start as pending, and the leaderboard and Posts page should only count approved ones.
+               When there are none, show the .admin-empty paragraph instead. -->
+          <div id="approval-list" class="approval-list">
+            <article class="approval">
+              <div class="ba-pair">
+                <figure>
+                  <div class="ba-placeholder" role="img" aria-label="Before cleaning by Dev (no photo yet)">No photo</div>
+                  <figcaption>Before</figcaption>
+                </figure>
+                <figure>
+                  <div class="ba-placeholder" role="img" aria-label="After cleaning by Dev (no photo yet)">No photo</div>
+                  <figcaption>After</figcaption>
+                </figure>
+              </div>
+              <div class="approval-body">
+                <p class="sub-meta">
+                  <strong>Dev</strong><time datetime="2026-11-07">Nov 7, 2026</time>
+                </p>
+                <p class="post-desc">Cleared the soldering bench, binned the offcuts and coiled the spare wire.</p>
+                <div class="approval-actions">
+                  <form class="approval-approve" action="/api/admin/submissions/12/approve" method="post">
+                    <label class="approval-points">
+                      <span>Points</span>
+                      <input name="points" type="number" min="0" max="100" step="1" value="10" required />
+                    </label>
+                    <button class="btn btn-primary" type="submit">Approve</button>
+                  </form>
+                  <form action="/api/admin/submissions/12/reject" method="post">
+                    <button class="btn btn-ghost" type="submit">Reject</button>
+                  </form>
+                </div>
+              </div>
+            </article>
+
+            <article class="approval">
+              <div class="ba-pair">
+                <figure>
+                  <div class="ba-placeholder" role="img" aria-label="Before cleaning by Chloe (no photo yet)">No photo</div>
+                  <figcaption>Before</figcaption>
+                </figure>
+                <figure>
+                  <div class="ba-placeholder" role="img" aria-label="After cleaning by Chloe (no photo yet)">No photo</div>
+                  <figcaption>After</figcaption>
+                </figure>
+              </div>
+              <div class="approval-body">
+                <p class="sub-meta">
+                  <strong>Chloe</strong><time datetime="2026-11-06">Nov 6, 2026</time>
+                </p>
+                <p class="post-desc">Wiped down the 3D printer beds and sorted the filament by colour.</p>
+                <div class="approval-actions">
+                  <form class="approval-approve" action="/api/admin/submissions/11/approve" method="post">
+                    <label class="approval-points">
+                      <span>Points</span>
+                      <input name="points" type="number" min="0" max="100" step="1" value="10" required />
+                    </label>
+                    <button class="btn btn-primary" type="submit">Approve</button>
+                  </form>
+                  <form action="/api/admin/submissions/11/reject" method="post">
+                    <button class="btn btn-ghost" type="submit">Reject</button>
+                  </form>
+                </div>
+              </div>
+            </article>
+          </div>
+          <p class="admin-empty" hidden>No cleanups waiting. New submissions will show up here.</p>
+        </section>
+
+        <!-- ============ 2. Tasks: delete (new tasks are assigned on tasks.html) ============ -->
+        <section id="manage-tasks" class="admin-section" aria-labelledby="tasks-title">
+          <div class="section-head">
+            <h2 id="tasks-title">Tasks</h2>
+          </div>
+
+          <!-- Sample data. Back end repeats one <tr> per task, soonest due first, done tasks last.
+               Delete: POST /api/tasks/{id}/delete. Removes the task for good.
+               (If it was already approved, the points it gave stay on that person's total.)
+               The status pill uses the same classes as tasks.html: (none) = To do, is-pending, is-done. -->
+          <div class="admin-table-wrap">
+            <table id="admin-tasks" class="admin-table">
+              <thead>
+                <tr>
+                  <th scope="col">Place</th>
+                  <th scope="col">Assigned to</th>
+                  <th scope="col">Due</th>
+                  <th scope="col" class="num">Points</th>
+                  <th scope="col">Status</th>
+                  <th scope="col"><span class="visually-hidden">Delete</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <th scope="row" data-label="Place">Print station</th>
+                  <td data-label="Assigned to">Chloe</td>
+                  <td data-label="Due"><time class="is-due-soon" datetime="2026-11-08">Nov 8</time></td>
+                  <td data-label="Points" class="num">15</td>
+                  <td data-label="Status"><span class="task-status">To do</span></td>
+                  <td class="row-action">
+                    <form action="/api/tasks/1/delete" method="post" onsubmit="return confirm('Delete the Print station task? This can\'t be undone.')">
+                      <button class="btn btn-danger" type="submit">Delete<span class="visually-hidden"> Print station task</span></button>
+                    </form>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row" data-label="Place">Laser cutter</th>
+                  <td data-label="Assigned to">Dev</td>
+                  <td data-label="Due"><time datetime="2026-11-10">Nov 10</time></td>
+                  <td data-label="Points" class="num">20</td>
+                  <td data-label="Status"><span class="task-status is-pending">Waiting for approval</span></td>
+                  <td class="row-action">
+                    <form action="/api/tasks/2/delete" method="post" onsubmit="return confirm('Delete the Laser cutter task? This can\'t be undone.')">
+                      <button class="btn btn-danger" type="submit">Delete<span class="visually-hidden"> Laser cutter task</span></button>
+                    </form>
+                  </td>
+                </tr>
+                <tr>
+                  <th scope="row" data-label="Place">Material shelf</th>
+                  <td data-label="Assigned to">Ellis</td>
+                  <td data-label="Due"><time datetime="2026-11-12">Nov 12</time></td>
+                  <td data-label="Points" class="num">25</td>
+                  <td data-label="Status"><span class="task-status">To do</span></td>
+                  <td class="row-action">
+                    <form action="/api/tasks/3/delete" method="post" onsubmit="return confirm('Delete the Material shelf task? This can\'t be undone.')">
+                      <button class="btn btn-danger" type="submit">Delete<span class="visually-hidden"> Material shelf task</span></button>
+                    </form>
+                  </td>
+                </tr>
+                <tr class="is-done">
+                  <th scope="row" data-label="Place">Kitchen sink</th>
+                  <td data-label="Assigned to">Ben</td>
+                  <td data-label="Due"><time datetime="2026-11-14">Nov 14</time></td>
+                  <td data-label="Points" class="num">10</td>
+                  <td data-label="Status"><span class="task-status is-done">Done</span></td>
+                  <td class="row-action">
+                    <form action="/api/tasks/4/delete" method="post" onsubmit="return confirm('Delete the Kitchen sink task? This can\'t be undone.')">
+                      <button class="btn btn-danger" type="submit">Delete<span class="visually-hidden"> Kitchen sink task</span></button>
+                    </form>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- ============ 3. People: edit name and points ============ -->
+        <section id="people" class="admin-section" aria-labelledby="people-title">
+          <div class="section-head">
+            <h2 id="people-title">People</h2>
+          </div>
+          <!-- Sample data. Back end repeats one <tr> per person, highest points first.
+               Each row's inputs belong to the <form id="person-{id}"> in its last cell (via the form="" attribute).
+               Save: POST /api/admin/users/{id}, fields name (text) and points (whole number, 0 or more).
+               Points here is the person's total, so saving sets it directly (it doesn't add to it).
+               Note: there's no users table yet. People only exist as names on submissions, so this needs
+               a users table keyed by Google "sub" (id, name, email, points). -->
+          <div class="admin-table-wrap">
+            <table id="admin-people" class="admin-table people-table">
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Email</th>
+                  <th scope="col" class="num">Points</th>
+                  <th scope="col"><span class="visually-hidden">Save</span></th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td data-label="Name">
+                    <label class="visually-hidden" for="person-1-name">Name</label>
+                    <input id="person-1-name" form="person-1" name="name" type="text" value="Ava" maxlength="60" required />
+                  </td>
+                  <td data-label="Email" class="person-email">ava@example.com</td>
+                  <td data-label="Points" class="num">
+                    <label class="visually-hidden" for="person-1-points">Points for Ava</label>
+                    <input id="person-1-points" form="person-1" name="points" type="number" min="0" step="1" value="120" required />
+                  </td>
+                  <td class="row-action">
+                    <form id="person-1" action="/api/admin/users/1" method="post">
+                      <button class="btn btn-ghost" type="submit">Save<span class="visually-hidden"> Ava</span></button>
+                    </form>
+                  </td>
+                </tr>
+                <tr>
+                  <td data-label="Name">
+                    <label class="visually-hidden" for="person-2-name">Name</label>
+                    <input id="person-2-name" form="person-2" name="name" type="text" value="Ben" maxlength="60" required />
+                  </td>
+                  <td data-label="Email" class="person-email">ben@example.com</td>
+                  <td data-label="Points" class="num">
+                    <label class="visually-hidden" for="person-2-points">Points for Ben</label>
+                    <input id="person-2-points" form="person-2" name="points" type="number" min="0" step="1" value="95" required />
+                  </td>
+                  <td class="row-action">
+                    <form id="person-2" action="/api/admin/users/2" method="post">
+                      <button class="btn btn-ghost" type="submit">Save<span class="visually-hidden"> Ben</span></button>
+                    </form>
+                  </td>
+                </tr>
+                <tr>
+                  <td data-label="Name">
+                    <label class="visually-hidden" for="person-3-name">Name</label>
+                    <input id="person-3-name" form="person-3" name="name" type="text" value="Chloe" maxlength="60" required />
+                  </td>
+                  <td data-label="Email" class="person-email">chloe@example.com</td>
+                  <td data-label="Points" class="num">
+                    <label class="visually-hidden" for="person-3-points">Points for Chloe</label>
+                    <input id="person-3-points" form="person-3" name="points" type="number" min="0" step="1" value="80" required />
+                  </td>
+                  <td class="row-action">
+                    <form id="person-3" action="/api/admin/users/3" method="post">
+                      <button class="btn btn-ghost" type="submit">Save<span class="visually-hidden"> Chloe</span></button>
+                    </form>
+                  </td>
+                </tr>
+                <tr>
+                  <td data-label="Name">
+                    <label class="visually-hidden" for="person-4-name">Name</label>
+                    <input id="person-4-name" form="person-4" name="name" type="text" value="Dev" maxlength="60" required />
+                  </td>
+                  <td data-label="Email" class="person-email">dev@example.com</td>
+                  <td data-label="Points" class="num">
+                    <label class="visually-hidden" for="person-4-points">Points for Dev</label>
+                    <input id="person-4-points" form="person-4" name="points" type="number" min="0" step="1" value="55" required />
+                  </td>
+                  <td class="row-action">
+                    <form id="person-4" action="/api/admin/users/4" method="post">
+                      <button class="btn btn-ghost" type="submit">Save<span class="visually-hidden"> Dev</span></button>
+                    </form>
+                  </td>
+                </tr>
+                <tr>
+                  <td data-label="Name">
+                    <label class="visually-hidden" for="person-5-name">Name</label>
+                    <input id="person-5-name" form="person-5" name="name" type="text" value="Ellis" maxlength="60" required />
+                  </td>
+                  <td data-label="Email" class="person-email">ellis@example.com</td>
+                  <td data-label="Points" class="num">
+                    <label class="visually-hidden" for="person-5-points">Points for Ellis</label>
+                    <input id="person-5-points" form="person-5" name="points" type="number" min="0" step="1" value="40" required />
+                  </td>
+                  <td class="row-action">
+                    <form id="person-5" action="/api/admin/users/5" method="post">
+                      <button class="btn btn-ghost" type="submit">Save<span class="visually-hidden"> Ellis</span></button>
+                    </form>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <footer class="site-footer">
+      <div class="container footer-inner">
+        <span class="brand brand-small">
+          <img
+            class="brand-logo brand-logo-small"
+            src="assets/asnBlackLogo.png"
+            alt=""
+            width="28"
+            height="28"
+          />
+          AscensionCleanics
+        </span>
+        <p>Built at Hackcamp to keep our design lab usable for everyone.</p>
+      </div>
+    </footer>
+
+    <script src="auth.js"></script>
+
+    <!-- Back end: add your scripts here. Hooks used by this page:
+       #approval-list, #admin-tasks, #admin-people, #auth-btn, #admin-link.
+       Every route below must check on the server that the signed-in user is an admin
+       (email in ADMIN_EMAILS). Hiding this page is not enough.
+       Endpoints this page needs:
+         POST /api/admin/submissions/{id}/approve   points
+         POST /api/admin/submissions/{id}/reject
+         POST /api/tasks/{id}/delete
+         POST /api/admin/users/{id}                 name, points
+       GET /api/auth/user already returns role: "admin" | "member". -->
+  </body>
+</html>

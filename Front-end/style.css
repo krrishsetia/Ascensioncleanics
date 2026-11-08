@@ -596,3 +596,111 @@ body:not([data-role="admin"]) .admin-only { display: none !important; }
 .task.is-done .task-points { background: var(--white); color: var(--black); box-shadow: inset 0 0 0 2px var(--black); }
 .task.is-done .task-due,
 .task.is-done .task-meta dd { color: var(--grey); }
+
+/* ---------- Admin page ---------- */
+.admin-page { max-width: 1040px; padding-block: clamp(2.5rem, 7vw, 4.5rem); }
+.admin-page .lead { margin-bottom: 1.75rem; }
+body[data-role="admin"] .admin-denied { display: none; }
+.admin-denied {
+  padding: 1.25rem 1.5rem; border: 1px solid var(--line); border-left: 4px solid var(--red);
+  border-radius: var(--radius); background: var(--surface); max-width: 60ch;
+}
+
+/* Jump links to each section */
+.admin-tabs {
+  display: flex; flex-wrap: wrap; gap: 0.5rem;
+  margin-bottom: clamp(2rem, 5vw, 3rem);
+}
+.admin-tabs a {
+  display: inline-flex; align-items: center; gap: 0.5rem;
+  min-height: 40px; padding: 0.35rem 0.5rem 0.35rem 0.9rem;
+  border: 1px solid var(--line); border-radius: 999px;
+  text-decoration: none; font-weight: 600; font-size: 0.95rem;
+  transition: border-color 160ms ease, color 160ms ease;
+}
+.admin-tabs a:hover { border-color: var(--black); color: var(--black); }
+.admin-count {
+  min-width: 1.75rem; padding: 0.05rem 0.5rem; border-radius: 999px;
+  background: var(--surface); text-align: center; font-size: 0.85rem; font-variant-numeric: tabular-nums;
+}
+.admin-tabs a:first-child .admin-count { background: var(--red); color: var(--white); } /* things waiting on you */
+
+.admin-section { margin-bottom: clamp(3rem, 7vw, 4.5rem); scroll-margin-top: 90px; }
+.admin-empty { color: var(--grey); }
+
+/* Cleanups to approve */
+.approval-list { display: grid; gap: 1.75rem; }
+@media (min-width: 760px) { .approval-list { grid-template-columns: 1fr 1fr; } }
+.approval {
+  display: grid; gap: 1rem;
+  padding: 0.75rem; border: 1px solid var(--line); border-radius: 16px;
+}
+.approval .ba-pair img, .approval .ba-placeholder { aspect-ratio: 4 / 3; }
+.approval-body { padding: 0 0.25rem 0.25rem; }
+.approval .sub-meta { margin-top: 0; }
+.approval-actions {
+  display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 0.75rem;
+  margin-top: 1.25rem; padding-top: 1rem; border-top: 1px solid var(--line);
+}
+.approval-approve { display: flex; align-items: end; gap: 0.6rem; }
+.approval-points { display: grid; gap: 0.2rem; font-size: 0.85rem; font-weight: 700; }
+.approval-actions .btn { min-height: 44px; padding: 0.4rem 1.1rem; }
+
+/* Inputs on the admin page (approve points, people table) */
+.admin-page input[type="number"],
+.admin-page .people-table input[type="text"] {
+  font: inherit; color: var(--black); background: var(--white);
+  min-height: 44px; padding: 0.4rem 0.6rem;
+  border: 1px solid #c9c9c9; border-radius: var(--radius);
+  transition: border-color 160ms ease;
+}
+.admin-page input[type="number"] { width: 5.5rem; font-variant-numeric: tabular-nums; }
+.admin-page .people-table input[type="text"] { width: 100%; min-width: 8rem; }
+.admin-page input:hover { border-color: var(--black); }
+.admin-page input:focus-visible { outline: 3px solid var(--red); outline-offset: 1px; border-color: var(--black); }
+.admin-page .task-form input[type="number"] { width: 100%; }
+
+/* Tables (tasks, people) */
+.admin-page .assign-task { margin-bottom: 1.5rem; }
+.admin-table-wrap { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; }
+.admin-table { width: 100%; border-collapse: collapse; font-size: 0.98rem; }
+.admin-table th, .admin-table td { padding: 0.7rem 1rem; text-align: left; vertical-align: middle; }
+.admin-table thead th {
+  background: var(--surface); font-size: 0.85rem; font-weight: 700; color: var(--grey);
+  border-bottom: 1px solid var(--line);
+}
+.admin-table tbody tr + tr { border-top: 1px solid var(--line); }
+.admin-table tbody th { font-weight: 750; }
+.admin-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+.admin-table .row-action { width: 1%; white-space: nowrap; text-align: right; }
+.admin-table .row-action .btn { min-height: 40px; padding: 0.35rem 1rem; }
+.admin-table time.is-due-soon { color: var(--red); font-weight: 700; }
+.admin-table tr.is-done th { text-decoration: line-through; color: var(--grey); }
+.admin-table tr.is-done td { color: var(--grey); }
+.person-email { color: var(--grey); font-size: 0.92rem; }
+
+/* Destructive button: quiet until you point at it */
+.btn-danger { background: var(--white); color: var(--red); border-color: #f1b5b0; }
+.btn-danger:hover { background: var(--red); border-color: var(--red); color: var(--white); }
+
+/* Phones: each table row becomes a small card with labels */
+@media (max-width: 699px) {
+  .admin-table-wrap { border: 0; border-radius: 0; overflow: visible; }
+  .admin-table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+  .admin-table, .admin-table tbody, .admin-table tr, .admin-table th, .admin-table td { display: block; }
+  .admin-table tbody tr {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 0.6rem 1rem;
+    padding: 1rem; border: 1px solid var(--line); border-radius: 12px;
+  }
+  .admin-table tbody tr + tr { border-top: 1px solid var(--line); margin-top: 0.75rem; }
+  .admin-table th, .admin-table td { padding: 0; }
+  .admin-table [data-label]::before {
+    content: attr(data-label); display: block;
+    font-size: 0.8rem; font-weight: 600; color: var(--grey); text-decoration: none;
+  }
+  .admin-table .num { text-align: left; }
+  .admin-table tbody th[data-label], .admin-table .row-action { grid-column: 1 / -1; }
+  .admin-table .row-action { width: auto; text-align: left; }
+  .admin-table .row-action .btn { width: 100%; }
+  .people-table td[data-label="Name"], .people-table .person-email { grid-column: 1 / -1; }
+}
