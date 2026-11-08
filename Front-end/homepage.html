@@ -47,19 +47,13 @@
     </header>
 
     <main id="main">
-      <!-- Intro: what the site is -->
-      <section class="intro container">
-        </h1>
-        <p class="lead">
-          Clean the lab, post a photo, and get recognized for your effort. 
-        </p>
-      </section>
+      <!-- Page heading for screen readers (the logo already shows the name) -->
+      <h1 class="visually-hidden">AscensionCleanics</h1>
 
       <!-- Leaderboard -->
       <section class="section container" aria-labelledby="lb-title">
         <div class="section-head">
           <h2 id="lb-title">Top cleaners this term</h2>
-          <a href="leaderboard.html">View all</a>
         </div>
           <!-- Sample data. Back end fills this with the top 5, rank 1 first.
              Each bar's --h is its height (points / top score * 78%, minimum 18%).
@@ -136,7 +130,6 @@
       <section class="section container" aria-labelledby="recent-title">
         <div class="section-head">
           <h2 id="recent-title">Recent cleanups</h2>
-          <a href="posts.html">View all</a>
         </div>
         <!-- Sample data. Back end repeats one <article> per submission (newest first, up to 6).
            Swap each .ba-placeholder div for <img src="..." alt="Before cleaning by NAME"> once photos exist. -->
