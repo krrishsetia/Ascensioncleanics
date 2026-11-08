@@ -184,6 +184,11 @@
                       </div>
                     </details>
                   </div>
+                  <div class="post-admin admin-only">
+                    <button class="btn btn-danger post-delete" type="button" data-post-id="${post.id}">
+                      Delete post<span class="visually-hidden"> by ${escapeHtml(post.user_name)}</span>
+                    </button>
+                  </div>
                 </article>
               `;
             }).join("");
@@ -208,6 +213,37 @@
             const { liked, like_count } = await res.json();
             btn.setAttribute("aria-pressed", liked ? "true" : "false");
             btn.querySelector(".like-count").textContent = like_count;
+          }
+        });
+
+        // 3b. Admins: delete a post (POST /api/posts/{id}/delete; the server must check the user is an admin)
+        postsContainer.addEventListener("click", async (e) => {
+          const btn = e.target.closest("button.post-delete[data-post-id]");
+          if (!btn) return;
+          const card = btn.closest("article.post");
+          const author = card?.querySelector(".sub-meta strong")?.textContent || "this person";
+          if (!confirm(`Delete this post by ${author}? Its photos, likes and comments will be removed. This can't be undone.`)) return;
+
+          btn.disabled = true;
+          try {
+            const res = await fetch(`/api/posts/${btn.dataset.postId}/delete`, {
+              method: "POST",
+              credentials: "include",
+              headers: { Accept: "application/json" },
+            });
+            if (!res.ok) {
+              const err = await res.json().catch(() => ({}));
+              alert(err.message || err.error || "Couldn't delete the post. Try again.");
+              btn.disabled = false;
+              return;
+            }
+            card.remove();
+            if (!postsContainer.querySelector("article.post")) {
+              postsContainer.innerHTML = '<p class="empty-state">No posts yet. <a href="submit.html">Submit a cleanup</a> to post the first one.</p>';
+            }
+          } catch (err) {
+            alert("Network error while deleting the post.");
+            btn.disabled = false;
           }
         });
 

@@ -727,3 +727,11 @@ body[data-role="admin"] .admin-denied { display: none; }
 @media (max-width: 699px) {
   .admin-table tbody tr.table-empty { display: block; }
 }
+
+/* ---------- Posts: admin-only delete ---------- */
+.post-admin {
+  clear: both; display: flex; justify-content: flex-end;
+  margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed var(--line);
+}
+.post-admin .btn { min-height: 36px; padding: 0.25rem 0.9rem; font-size: 0.9rem; }
+.post-admin .btn:disabled { opacity: 0.6; cursor: progress; }
