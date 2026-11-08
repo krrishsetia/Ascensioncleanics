@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Admin · AscensionCleanics</title>
+    <link rel="icon" type="image/png" href="assets/asnWhiteLogo.png" />
     <meta
       name="description"
       content="Approve cleanups, delete tasks, and edit people's names and points."
@@ -29,7 +30,7 @@
             class="brand-logo"
             src="assets/asnBlackLogo.png"
             alt=""
-            width="40"
+            width="30"
             height="40"
           />
           AscensionCleanics
@@ -39,11 +40,15 @@
           <li><a href="submit.html">Submit</a></li>
           <li><a href="posts.html">Posts</a></li>
           <li><a href="tasks.html">Tasks</a></li>
-          <li id="admin-link" hidden><a href="admin.html" aria-current="page">Admin</a></li>
+          <li id="admin-link" hidden>
+            <a href="admin.html" aria-current="page">Admin</a>
+          </li>
         </ul>
         <div class="nav-auth">
           <span id="user-name" class="user-name" hidden></span>
-          <a id="auth-btn" class="btn btn-ghost" href="api/auth/login">Sign in</a>
+          <a id="auth-btn" class="btn btn-ghost" href="api/auth/login"
+            >Sign in</a
+          >
         </div>
       </nav>
     </header>
@@ -57,17 +62,25 @@
       </p>
 
       <div class="admin-only">
-        <p class="lead">Approve cleanups, delete tasks, and fix people's names and points.</p>
+        <p class="lead">
+          Approve cleanups, delete tasks, and fix people's names and points.
+        </p>
 
         <!-- Jump links. Back end: put the real counts in .admin-count. -->
         <nav class="admin-tabs" aria-label="Admin sections">
-          <a href="#approvals">Cleanups to approve <span class="admin-count">0</span></a>
+          <a href="#approvals"
+            >Cleanups to approve <span class="admin-count">0</span></a
+          >
           <a href="#manage-tasks">Tasks <span class="admin-count">0</span></a>
           <a href="#people">People <span class="admin-count">0</span></a>
         </nav>
 
         <!-- ============ 1. Approve cleanups ============ -->
-        <section id="approvals" class="admin-section" aria-labelledby="approvals-title">
+        <section
+          id="approvals"
+          class="admin-section"
+          aria-labelledby="approvals-title"
+        >
           <div class="section-head">
             <h2 id="approvals-title">Cleanups to approve</h2>
           </div>
@@ -78,13 +91,18 @@
                Note: submissions don't have a status yet. They need a status column (pending / approved / rejected),
                new ones should start as pending, and the leaderboard and Posts page should only count approved ones.
                When there are none, show the .admin-empty paragraph instead. -->
-          <div id="approval-list" class="approval-list">
-          </div>
-          <p class="admin-empty">No cleanups waiting. New submissions will show up here.</p>
+          <div id="approval-list" class="approval-list"></div>
+          <p class="admin-empty">
+            No cleanups waiting. New submissions will show up here.
+          </p>
         </section>
 
         <!-- ============ 2. Tasks: delete (new tasks are assigned on tasks.html) ============ -->
-        <section id="manage-tasks" class="admin-section" aria-labelledby="tasks-title">
+        <section
+          id="manage-tasks"
+          class="admin-section"
+          aria-labelledby="tasks-title"
+        >
           <div class="section-head">
             <h2 id="tasks-title">Tasks</h2>
           </div>
@@ -102,18 +120,26 @@
                   <th scope="col">Due</th>
                   <th scope="col" class="num">Points</th>
                   <th scope="col">Status</th>
-                  <th scope="col"><span class="visually-hidden">Delete</span></th>
+                  <th scope="col">
+                    <span class="visually-hidden">Delete</span>
+                  </th>
                 </tr>
               </thead>
               <tbody>
-                <tr class="table-empty"><td colspan="6">No tasks yet.</td></tr>
+                <tr class="table-empty">
+                  <td colspan="6">No tasks yet.</td>
+                </tr>
               </tbody>
             </table>
           </div>
         </section>
 
         <!-- ============ 3. People: edit name and points ============ -->
-        <section id="people" class="admin-section" aria-labelledby="people-title">
+        <section
+          id="people"
+          class="admin-section"
+          aria-labelledby="people-title"
+        >
           <div class="section-head">
             <h2 id="people-title">People</h2>
           </div>
@@ -134,7 +160,12 @@
                 </tr>
               </thead>
               <tbody>
-                <tr class="table-empty"><td colspan="4">No people yet. Anyone who signs in and submits a cleanup appears here.</td></tr>
+                <tr class="table-empty">
+                  <td colspan="4">
+                    No people yet. Anyone who signs in and submits a cleanup
+                    appears here.
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -149,7 +180,7 @@
             class="brand-logo brand-logo-small"
             src="assets/asnBlackLogo.png"
             alt=""
-            width="28"
+            width="20"
             height="28"
           />
           AscensionCleanics
@@ -171,7 +202,7 @@
          POST /api/admin/users/{id}                 name, points
        GET /api/auth/user already returns role: "admin" | "member". -->
 
-       <script src="auth.js"></script>
+    <script src="auth.js"></script>
     <script>
       function escapeHtml(str) {
         const div = document.createElement("div");
@@ -182,13 +213,20 @@
       function formatFullDate(dateStr) {
         const d = new Date(dateStr + "T00:00:00");
         if (isNaN(d)) return escapeHtml(dateStr);
-        return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+        return d.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
       }
 
       function formatShortDate(dateStr) {
         const d = new Date(dateStr + "T00:00:00");
         if (isNaN(d)) return escapeHtml(dateStr);
-        return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+        return d.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+        });
       }
 
       function isDueSoon(dateStr, status) {
@@ -201,12 +239,16 @@
       async function loadAdminDashboard() {
         try {
           // Backend checks admin session and returns 403 if not an admin
-          const res = await fetch("/api/admin/overview", { credentials: "include" });
+          const res = await fetch("/api/admin/overview", {
+            credentials: "include",
+          });
           if (!res.ok) return;
           const { pending_submissions, tasks, people } = await res.json();
 
           // Update tab counts
-          const countSpans = document.querySelectorAll(".admin-tabs .admin-count");
+          const countSpans = document.querySelectorAll(
+            ".admin-tabs .admin-count",
+          );
           if (countSpans.length >= 3) {
             countSpans[0].textContent = pending_submissions.length;
             countSpans[1].textContent = tasks.length;
@@ -221,7 +263,9 @@
             if (emptyMsg) emptyMsg.hidden = false;
           } else {
             if (emptyMsg) emptyMsg.hidden = true;
-            approvalList.innerHTML = pending_submissions.map((sub) => `
+            approvalList.innerHTML = pending_submissions
+              .map(
+                (sub) => `
               <article class="approval" data-sub-id="${sub.id}">
                 <div class="ba-pair">
                   <figure>
@@ -253,19 +297,26 @@
                   </div>
                 </div>
               </article>
-            `).join("");
+            `,
+              )
+              .join("");
           }
 
           // 2. Render Tasks Table
           const tasksTbody = document.querySelector("#admin-tasks tbody");
-          tasksTbody.innerHTML = tasks.map((t) => {
-            const isDone = t.status === 2;
-            const dueSoon = isDueSoon(t.due_on, t.status) ? "is-due-soon" : "";
-            let statusPill = `<span class="task-status">To do</span>`;
-            if (t.status === 1) statusPill = `<span class="task-status is-pending">Waiting for approval</span>`;
-            if (t.status === 2) statusPill = `<span class="task-status is-done">Done</span>`;
+          tasksTbody.innerHTML = tasks
+            .map((t) => {
+              const isDone = t.status === 2;
+              const dueSoon = isDueSoon(t.due_on, t.status)
+                ? "is-due-soon"
+                : "";
+              let statusPill = `<span class="task-status">To do</span>`;
+              if (t.status === 1)
+                statusPill = `<span class="task-status is-pending">Waiting for approval</span>`;
+              if (t.status === 2)
+                statusPill = `<span class="task-status is-done">Done</span>`;
 
-            return `
+              return `
               <tr class="${isDone ? "is-done" : ""}">
                 <th scope="row" data-label="Place">${escapeHtml(t.task_name)}</th>
                 <td data-label="Assigned to">${escapeHtml(t.assigned_to)}</td>
@@ -279,11 +330,14 @@
                 </td>
               </tr>
             `;
-          }).join("");
+            })
+            .join("");
 
           // 3. Render People Table
           const peopleTbody = document.querySelector("#admin-people tbody");
-          peopleTbody.innerHTML = people.map((p) => `
+          peopleTbody.innerHTML = people
+            .map(
+              (p) => `
             <tr>
               <td data-label="Name">
                 <label class="visually-hidden" for="person-${p.id}-name">Name</label>
@@ -300,7 +354,9 @@
                 </form>
               </td>
             </tr>
-          `).join("");
+          `,
+            )
+            .join("");
         } catch (err) {
           console.error("Failed to load admin overview:", err);
         }
@@ -315,7 +371,8 @@
         const actionType = form.dataset.adminAction;
         if (actionType === "delete-task") {
           const name = form.dataset.taskName || "this";
-          if (!confirm(`Delete the ${name} task? This can't be undone.`)) return;
+          if (!confirm(`Delete the ${name} task? This can't be undone.`))
+            return;
         }
 
         const formData = new FormData(form);

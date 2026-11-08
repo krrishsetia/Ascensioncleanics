@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Submit a cleanup · AscensionCleanics</title>
+    <link rel="icon" type="image/png" href="assets/asnWhiteLogo.png" />
     <meta
       name="description"
       content="Post before and after photos of a cleanup in the design lab."
@@ -26,7 +27,7 @@
             class="brand-logo"
             src="assets/asnBlackLogo.png"
             alt=""
-            width="40"
+            width="30"
             height="40"
           />
           AscensionCleanics
@@ -40,7 +41,9 @@
         </ul>
         <div class="nav-auth">
           <span id="user-name" class="user-name" hidden></span>
-          <a id="auth-btn" class="btn btn-ghost" href="api/auth/login">Sign in</a>
+          <a id="auth-btn" class="btn btn-ghost" href="api/auth/login"
+            >Sign in</a
+          >
         </div>
       </nav>
     </header>
@@ -153,7 +156,7 @@
             class="brand-logo brand-logo-small"
             src="assets/asnBlackLogo.png"
             alt=""
-            width="28"
+            width="20"
             height="28"
           />
           AscensionCleanics
@@ -189,7 +192,7 @@
        #submit-form, #before-image, #after-image, #cleaner-name, #description, #cleaned-on,
        #auth-btn, #user-name, #admin-link. -->
 
-       <script>
+    <script>
       // 1. Photo preview logic
       document.querySelectorAll(".photo-drop").forEach((tile) => {
         const input = tile.querySelector('input[type="file"]');
@@ -237,7 +240,10 @@
             authBtn.href = "#";
             authBtn.onclick = async (e) => {
               e.preventDefault();
-              await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+              await fetch("/api/auth/logout", {
+                method: "POST",
+                credentials: "include",
+              });
               window.location.reload();
             };
           } else {
@@ -255,7 +261,9 @@
         authBtn.href = "/api/auth/login";
 
         // Disable form fields and prompt user to sign in
-        form.querySelectorAll("input, textarea").forEach((el) => (el.disabled = true));
+        form
+          .querySelectorAll("input, textarea")
+          .forEach((el) => (el.disabled = true));
         submitBtn.textContent = "Sign in with Google to submit";
       }
 

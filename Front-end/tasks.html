@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Tasks · AscensionCleanics</title>
+    <link rel="icon" type="image/png" href="assets/asnWhiteLogo.png" />
     <meta
       name="description"
       content="Cleaning tasks assigned in the design lab, with who's doing them and when they're due."
@@ -28,7 +29,7 @@
             class="brand-logo"
             src="assets/asnBlackLogo.png"
             alt=""
-            width="40"
+            width="30"
             height="40"
           />
           AscensionCleanics
@@ -42,14 +43,18 @@
         </ul>
         <div class="nav-auth">
           <span id="user-name" class="user-name" hidden></span>
-          <a id="auth-btn" class="btn btn-ghost" href="api/auth/login">Sign in</a>
+          <a id="auth-btn" class="btn btn-ghost" href="api/auth/login"
+            >Sign in</a
+          >
         </div>
       </nav>
     </header>
 
     <main id="main" class="container tasks-page">
       <h1 class="page-title">Tasks</h1>
-      <p class="lead">Cleaning jobs assigned by admins, soonest deadline first.</p>
+      <p class="lead">
+        Cleaning jobs assigned by admins, soonest deadline first.
+      </p>
 
       <!-- Admins only: assign a new task -->
       <details class="assign-task admin-only">
@@ -66,11 +71,23 @@
           <div class="task-form-row">
             <div class="field">
               <label class="field-label" for="task-place">Place</label>
-              <input id="task-place" name="place" type="text" required placeholder="e.g. Print station" />
+              <input
+                id="task-place"
+                name="place"
+                type="text"
+                required
+                placeholder="e.g. Print station"
+              />
             </div>
             <div class="field">
               <label class="field-label" for="task-assignee">Assign to</label>
-              <input id="task-assignee" name="assignee" type="text" required placeholder="Member's name" />
+              <input
+                id="task-assignee"
+                name="assignee"
+                type="text"
+                required
+                placeholder="Member's name"
+              />
             </div>
             <div class="field">
               <label class="field-label" for="task-due">Due</label>
@@ -78,18 +95,40 @@
             </div>
             <div class="field">
               <label class="field-label" for="task-points">Points</label>
-              <input id="task-points" name="points" type="number" min="1" max="100" step="1" required placeholder="10" />
+              <input
+                id="task-points"
+                name="points"
+                type="number"
+                min="1"
+                max="100"
+                step="1"
+                required
+                placeholder="10"
+              />
             </div>
           </div>
           <div class="field">
-            <label class="field-label" for="task-description">Description</label>
-            <textarea id="task-description" name="description" rows="3" maxlength="500" required placeholder="What needs doing?"></textarea>
+            <label class="field-label" for="task-description"
+              >Description</label
+            >
+            <textarea
+              id="task-description"
+              name="description"
+              rows="3"
+              maxlength="500"
+              required
+              placeholder="What needs doing?"
+            ></textarea>
           </div>
           <div class="field">
-            <label class="field-label" for="task-photo">Photo <span class="field-optional">(optional)</span></label>
+            <label class="field-label" for="task-photo"
+              >Photo <span class="field-optional">(optional)</span></label
+            >
             <input id="task-photo" name="photo" type="file" accept="image/*" />
           </div>
-          <button class="btn btn-primary submit-btn" type="submit">Assign task</button>
+          <button class="btn btn-primary submit-btn" type="submit">
+            Assign task
+          </button>
         </form>
       </details>
 
@@ -103,7 +142,9 @@
            "Send back" returns a pending task to open. Done tasks get class "is-done" and go at the bottom.
            The server must check that only the assignee can mark done and only admins can approve. -->
       <ol id="tasks" class="task-list">
-        <li class="empty-state">No tasks yet. Tasks an admin assigns will show up here.</li>
+        <li class="empty-state">
+          No tasks yet. Tasks an admin assigns will show up here.
+        </li>
       </ol>
     </main>
 
@@ -114,7 +155,7 @@
             class="brand-logo brand-logo-small"
             src="assets/asnBlackLogo.png"
             alt=""
-            width="28"
+            width="20"
             height="28"
           />
           AscensionCleanics
@@ -129,7 +170,7 @@
        #tasks, #assign-form, #auth-btn, #user-name, #admin-link.
        The server must reject task creation from non-admins. Hiding the form is not enough. -->
 
-       <script>
+    <script>
       function escapeHtml(str) {
         const div = document.createElement("div");
         div.textContent = str || "";
@@ -139,7 +180,11 @@
       function formatFullDate(dateStr) {
         const d = new Date(dateStr + "T00:00:00");
         if (isNaN(d)) return escapeHtml(dateStr);
-        return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+        return d.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
       }
 
       function isDueSoon(dateStr, status) {
@@ -160,7 +205,9 @@
 
         // 1. Check Auth & Role
         try {
-          const authRes = await fetch("/api/auth/user", { credentials: "include" });
+          const authRes = await fetch("/api/auth/user", {
+            credentials: "include",
+          });
           if (authRes.ok) {
             const data = await authRes.json();
             currentUser = data.user;
@@ -179,7 +226,10 @@
             authBtn.href = "#";
             authBtn.onclick = async (e) => {
               e.preventDefault();
-              await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+              await fetch("/api/auth/logout", {
+                method: "POST",
+                credentials: "include",
+              });
               window.location.reload();
             };
           } else {
@@ -218,23 +268,25 @@
         }
 
         // 4. Handle Task Status Buttons (Mark as done / Approve / Send back)
-        document.getElementById("tasks").addEventListener("submit", async (e) => {
-          const form = e.target.closest("form[data-task-action]");
-          if (!form) return;
-          e.preventDefault();
+        document
+          .getElementById("tasks")
+          .addEventListener("submit", async (e) => {
+            const form = e.target.closest("form[data-task-action]");
+            if (!form) return;
+            e.preventDefault();
 
-          const res = await fetch(form.action, {
-            method: "POST",
-            credentials: "include",
-            headers: { Accept: "application/json" },
+            const res = await fetch(form.action, {
+              method: "POST",
+              credentials: "include",
+              headers: { Accept: "application/json" },
+            });
+            if (res.ok) {
+              await loadTasks();
+            } else {
+              const err = await res.json().catch(() => ({}));
+              alert(err.message || "Action not permitted.");
+            }
           });
-          if (res.ok) {
-            await loadTasks();
-          } else {
-            const err = await res.json().catch(() => ({}));
-            alert(err.message || "Action not permitted.");
-          }
-        });
       }
 
       async function loadTasks() {
@@ -245,28 +297,31 @@
           const { data } = await res.json();
           if (!data || data.length === 0) return; // keep the "No tasks yet" message
 
-          listEl.innerHTML = data.map((t) => {
-            const statusStr = t.status_label; // "open" | "pending" | "done"
-            const isDone = t.status === 2;
-            const dueSoonClass = isDueSoon(t.due_on, t.status) ? "is-due-soon" : "";
+          listEl.innerHTML = data
+            .map((t) => {
+              const statusStr = t.status_label; // "open" | "pending" | "done"
+              const isDone = t.status === 2;
+              const dueSoonClass = isDueSoon(t.due_on, t.status)
+                ? "is-due-soon"
+                : "";
 
-            const photoHtml = t.photo_url
-              ? `<div class="task-photo">
+              const photoHtml = t.photo_url
+                ? `<div class="task-photo">
                    <img src="${escapeHtml(t.photo_url)}" alt="Photo of ${escapeHtml(t.task_name)}" />
                  </div>`
-              : "";
+                : "";
 
-            // Determine action buttons based on status (0=open, 1=pending, 2=done)
-            let actionsHtml = "";
-            if (t.status === 0) {
-              actionsHtml = `
+              // Determine action buttons based on status (0=open, 1=pending, 2=done)
+              let actionsHtml = "";
+              if (t.status === 0) {
+                actionsHtml = `
                 <span class="task-status">To do</span>
                 <form class="auth-in-only" data-task-action="done" action="/api/tasks/${t.id}/done" method="post">
                   <button class="btn btn-primary" type="submit">Mark as done</button>
                 </form>
               `;
-            } else if (t.status === 1) {
-              actionsHtml = `
+              } else if (t.status === 1) {
+                actionsHtml = `
                 <span class="task-status is-pending">Waiting for approval</span>
                 <form class="admin-only" data-task-action="approve" action="/api/tasks/${t.id}/approve" method="post">
                   <button class="btn btn-primary" type="submit">Approve and give ${t.pts_worth} pts</button>
@@ -275,13 +330,13 @@
                   <button class="btn btn-ghost" type="submit">Send back</button>
                 </form>
               `;
-            } else {
-              actionsHtml = `
+              } else {
+                actionsHtml = `
                 <span class="task-status is-done">Done, ${t.pts_worth} pts given to ${escapeHtml(t.assigned_to)}</span>
               `;
-            }
+              }
 
-            return `
+              return `
               <li>
                 <article class="task ${isDone ? "is-done" : ""}" data-status="${statusStr}">
                   ${photoHtml}
@@ -310,7 +365,8 @@
                 </article>
               </li>
             `;
-          }).join("");
+            })
+            .join("");
         } catch (e) {
           console.error("Failed to load tasks:", e);
         }

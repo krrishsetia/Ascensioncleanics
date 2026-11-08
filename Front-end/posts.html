@@ -4,6 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Posts · AscensionCleanics</title>
+    <link rel="icon" type="image/png" href="assets/asnWhiteLogo.png" />
     <meta
       name="description"
       content="Every cleanup posted to AscensionCleanics, newest first."
@@ -26,7 +27,7 @@
             class="brand-logo"
             src="assets/asnBlackLogo.png"
             alt=""
-            width="40"
+            width="30"
             height="40"
           />
           AscensionCleanics
@@ -40,7 +41,9 @@
         </ul>
         <div class="nav-auth">
           <span id="user-name" class="user-name" hidden></span>
-          <a id="auth-btn" class="btn btn-ghost" href="api/auth/login">Sign in</a>
+          <a id="auth-btn" class="btn btn-ghost" href="api/auth/login"
+            >Sign in</a
+          >
         </div>
       </nav>
     </header>
@@ -52,7 +55,10 @@
       <!-- Filled by the page script with one <article class="sub-card post"> per submission,
            sorted by cleaned_on date, newest first. The paragraph below shows until there's data. -->
       <div id="posts" class="post-grid">
-        <p class="empty-state">No posts yet. <a href="submit.html">Submit a cleanup</a> to post the first one.</p>
+        <p class="empty-state">
+          No posts yet. <a href="submit.html">Submit a cleanup</a> to post the
+          first one.
+        </p>
       </div>
     </main>
 
@@ -63,7 +69,7 @@
             class="brand-logo brand-logo-small"
             src="assets/asnBlackLogo.png"
             alt=""
-            width="28"
+            width="20"
             height="28"
           />
           AscensionCleanics
@@ -80,7 +86,7 @@
        That shows .auth-in-only (like button, comment form) or .auth-out-only (sign-in links).
        The server must still reject likes/comments from signed-out users. Hiding the form is not enough. -->
 
-       <script>
+    <script>
       function escapeHtml(str) {
         const div = document.createElement("div");
         div.textContent = str || "";
@@ -90,7 +96,11 @@
       function formatFullDate(dateStr) {
         const d = new Date(dateStr + "T00:00:00");
         if (isNaN(d)) return escapeHtml(dateStr);
-        return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+        return d.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        });
       }
 
       async function initPostsPage() {
@@ -99,7 +109,9 @@
 
         // 1. Check Auth Status
         try {
-          const authRes = await fetch("/api/auth/user", { credentials: "include" });
+          const authRes = await fetch("/api/auth/user", {
+            credentials: "include",
+          });
           if (authRes.ok) {
             const { user } = await authRes.json();
             document.body.dataset.auth = "in";
@@ -109,7 +121,10 @@
             authBtn.href = "#";
             authBtn.onclick = async (e) => {
               e.preventDefault();
-              await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+              await fetch("/api/auth/logout", {
+                method: "POST",
+                credentials: "include",
+              });
               window.location.reload();
             };
           } else {
@@ -129,21 +144,30 @@
           const { data } = await res.json();
 
           if (data && data.length > 0) {
-            const uploadedHtml = data.map((post) => {
-              const commentsCount = post.comments ? post.comments.length : 0;
-              const commentLabel = commentsCount === 1 ? "1 comment" : `${commentsCount} comments`;
-              const commentsListHtml = commentsCount > 0
-                ? `<ul class="comment-list">
-                    ${post.comments.map((c) => `
+            const uploadedHtml = data
+              .map((post) => {
+                const commentsCount = post.comments ? post.comments.length : 0;
+                const commentLabel =
+                  commentsCount === 1
+                    ? "1 comment"
+                    : `${commentsCount} comments`;
+                const commentsListHtml =
+                  commentsCount > 0
+                    ? `<ul class="comment-list">
+                    ${post.comments
+                      .map(
+                        (c) => `
                       <li class="comment">
                         <p class="comment-meta"><strong>${escapeHtml(c.user_name)}</strong><time datetime="${escapeHtml(c.created_at)}">${escapeHtml(c.created_at)}</time></p>
                         <p class="comment-text">${escapeHtml(c.body)}</p>
                       </li>
-                    `).join("")}
+                    `,
+                      )
+                      .join("")}
                    </ul>`
-                : `<p class="comment-empty">No comments yet.</p>`;
+                    : `<p class="comment-empty">No comments yet.</p>`;
 
-              return `
+                return `
                 <article class="sub-card post">
                   <div class="ba-pair">
                     <figure>
@@ -191,7 +215,8 @@
                   </div>
                 </article>
               `;
-            }).join("");
+              })
+              .join("");
 
             // Replace the "No posts yet" message with the real posts
             postsContainer.innerHTML = uploadedHtml;
@@ -221,8 +246,15 @@
           const btn = e.target.closest("button.post-delete[data-post-id]");
           if (!btn) return;
           const card = btn.closest("article.post");
-          const author = card?.querySelector(".sub-meta strong")?.textContent || "this person";
-          if (!confirm(`Delete this post by ${author}? Its photos, likes and comments will be removed. This can't be undone.`)) return;
+          const author =
+            card?.querySelector(".sub-meta strong")?.textContent ||
+            "this person";
+          if (
+            !confirm(
+              `Delete this post by ${author}? Its photos, likes and comments will be removed. This can't be undone.`,
+            )
+          )
+            return;
 
           btn.disabled = true;
           try {
@@ -233,13 +265,18 @@
             });
             if (!res.ok) {
               const err = await res.json().catch(() => ({}));
-              alert(err.message || err.error || "Couldn't delete the post. Try again.");
+              alert(
+                err.message ||
+                  err.error ||
+                  "Couldn't delete the post. Try again.",
+              );
               btn.disabled = false;
               return;
             }
             card.remove();
             if (!postsContainer.querySelector("article.post")) {
-              postsContainer.innerHTML = '<p class="empty-state">No posts yet. <a href="submit.html">Submit a cleanup</a> to post the first one.</p>';
+              postsContainer.innerHTML =
+                '<p class="empty-state">No posts yet. <a href="submit.html">Submit a cleanup</a> to post the first one.</p>';
             }
           } catch (err) {
             alert("Network error while deleting the post.");
