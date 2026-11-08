@@ -45,6 +45,9 @@ p { margin: 0 0 1rem; max-width: 62ch; }
 .container { width: min(1160px, 100% - 2 * var(--gutter)); margin-inline: auto; }
 .section { padding-block: clamp(3rem, 8vw, 5.5rem); }
 .section + .section { padding-top: 0; } /* stacked sections share one gap, not two */
+/* Home leaderboard: no rule above it, and a tighter gap below */
+.leaderboard-section { padding-bottom: clamp(1.5rem, 4vw, 2.5rem); }
+.leaderboard-section .section-head { border-top: 0; padding-top: 0; }
 [hidden] { display: none !important; }
 
 .skip-link {
@@ -100,6 +103,25 @@ p { margin: 0 0 1rem; max-width: 62ch; }
 .nav-links a[aria-current="page"] { border-bottom-color: var(--red); }
 .nav-auth { display: flex; align-items: center; gap: 0.75rem; }
 .nav-auth .btn { min-height: 40px; padding: 0.4rem 1rem; }
+/* After Google sign-in: a label, not a link */
+.btn.is-signed-in, .btn.is-signed-in:hover { cursor: default; border-color: var(--black); color: var(--black); }
+.btn.is-signed-in::before {
+  content: ""; flex: none; width: 0.5rem; height: 0.5rem; margin-right: 0.5rem;
+  border-radius: 50%; background: var(--red);
+}
+.btn.is-signed-in .auth-name {
+  margin-left: 0.5rem; padding-left: 0.5rem; border-left: 1px solid var(--line);
+  font-weight: 750; max-width: 14ch;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+/* Phones: just the red dot and the name, so it fits beside the logo */
+@media (max-width: 699px) {
+  .btn.is-signed-in .auth-label { display: none; }
+  .btn.is-signed-in .auth-name { margin-left: 0; padding-left: 0; border-left: 0; max-width: none; min-width: 0; }
+  /* Let the button take whatever room is left beside the logo; long names get "…" */
+  .nav-auth { flex: 1 1 0; min-width: 0; justify-content: flex-end; }
+  .nav-auth .btn.is-signed-in { min-width: 0; max-width: 100%; padding-inline: 0.6rem; }
+}
 .user-name { font-weight: 700; }
 
 /* Small screens: logo + sign-in on row one, links on row two */
