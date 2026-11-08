@@ -173,5 +173,116 @@
     <!-- Back end: add your scripts here. Hooks used by this page:
        #submit-form, #before-image, #after-image, #description, #cleaned-on,
        #auth-btn, #user-name, #admin-link. -->
+
+       <script>
+      // 1. Photo preview logic
+      document.querySelectorAll(".photo-drop").forEach((tile) => {
+        const input = tile.querySelector('input[type="file"]');
+        const preview = tile.querySelector(".photo-preview");
+        input.addEventListener("change", () => {
+          if (preview.src) URL.revokeObjectURL(preview.src);
+          const file = input.files[0];
+          if (file && file.type.startsWith("image/")) {
+            preview.src = URL.createObjectURL(file);
+            preview.hidden = false;
+            tile.classList.add("has-image");
+          } else {
+            preview.removeAttribute("src");
+            preview.hidden = true;
+            tile.classList.remove("has-image");
+          }
+        });
+      });
+
+      // Default the date picker to today's date
+      const dateInput = document.getElementById("cleaned-on");
+      if (dateInput && !dateInput.value) {
+        dateInput.valueAsDate = new Date();
+      }
+
+      // 2. Check login state and guard the submission form
+      const form = document.getElementById("submit-form");
+      const submitBtn = form.querySelector(".submit-btn");
+      const authBtn = document.getElementById("auth-btn");
+      const userNameEl = document.getElementById("user-name");
+      let isAuthenticated = false;
+
+      async function checkAuth() {
+        try {
+          const res = await fetch("/api/auth/user", { credentials: "include" });
+          if (res.ok) {
+            const data = await res.json();
+            isAuthenticated = true;
+            document.body.dataset.auth = "in";
+
+            // Show user's name and turn button into Sign out
+            userNameEl.textContent = data.user.name || data.user.email;
+            userNameEl.hidden = false;
+            authBtn.textContent = "Sign out";
+            authBtn.href = "#";
+            authBtn.onclick = async (e) => {
+              e.preventDefault();
+              await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+              window.location.reload();
+            };
+          } else {
+            lockFormForLoggedOutUser();
+          }
+        } catch (err) {
+          lockFormForLoggedOutUser();
+        }
+      }
+
+      function lockFormForLoggedOutUser() {
+        isAuthenticated = false;
+        document.body.dataset.auth = "out";
+        authBtn.textContent = "Sign in";
+        authBtn.href = "/api/auth/login";
+
+        // Disable form fields and prompt user to sign in
+        form.querySelectorAll("input, textarea").forEach((el) => (el.disabled = true));
+        submitBtn.textContent = "Sign in with Google to submit";
+      }
+
+      // 3. Handle form submission
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        if (!isAuthenticated) {
+          window.location.href = "/api/auth/login";
+          return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Uploading...";
+
+        try {
+          const formData = new FormData(form);
+          const res = await fetch("/api/submissions", {
+            method: "POST",
+            body: formData,
+            credentials: "include",
+            headers: { Accept: "application/json" },
+          });
+
+          const result = await res.json();
+          if (!res.ok) {
+            alert(result.message || result.error || "Upload failed.");
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Submit cleanup";
+            return;
+          }
+
+          // Redirect to posts page after successful upload
+          window.location.href = "/posts.html";
+        } catch (err) {
+          alert("Network error while uploading submission.");
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Submit cleanup";
+        }
+      });
+
+      checkAuth();
+    </script>
   </body>
 </html>

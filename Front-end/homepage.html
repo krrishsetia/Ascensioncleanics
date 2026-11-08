@@ -246,5 +246,110 @@
     <!-- Back end: add your scripts here. Hooks used by this page:
        #leaderboard, #submissions, #auth-btn (Sign in / Sign out),
        #user-name (show when signed in), #admin-link (show for admins). -->
+
+    <script>
+      function escapeHtml(str) {
+        const div = document.createElement("div");
+        div.textContent = str || "";
+        return div.innerHTML;
+      }
+
+      function formatShortDate(dateStr) {
+        const d = new Date(dateStr + "T00:00:00");
+        if (isNaN(d)) return escapeHtml(dateStr);
+        return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      }
+
+      async function initHomepage() {
+        const authBtn = document.getElementById("auth-btn");
+        const userNameEl = document.getElementById("user-name");
+
+        // 1. Check Auth Status
+        try {
+          const authRes = await fetch("/api/auth/user", { credentials: "include" });
+          if (authRes.ok) {
+            const { user } = await authRes.json();
+            document.body.dataset.auth = "in";
+            userNameEl.textContent = user.name || user.email;
+            userNameEl.hidden = false;
+            authBtn.textContent = "Sign out";
+            authBtn.href = "#";
+            authBtn.onclick = async (e) => {
+              e.preventDefault();
+              await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+              window.location.reload();
+            };
+          } else {
+            authBtn.href = "/api/auth/login";
+          }
+        } catch (e) {
+          authBtn.href = "/api/auth/login";
+        }
+
+        // 2. Load Recent Cleanups (up to 6 newest)
+        try {
+          const subRes = await fetch("/api/submissions");
+          if (subRes.ok) {
+            const { data } = await subRes.json();
+            if (data && data.length > 0) {
+              const container = document.getElementById("submissions");
+              container.innerHTML = data.slice(0, 6).map((item) => `
+                <article class="sub-card">
+                  <div class="ba-pair">
+                    <figure>
+                      <img src="${escapeHtml(item.before_image_url)}" alt="Before cleaning by ${escapeHtml(item.user_name)}" />
+                      <figcaption>Before</figcaption>
+                    </figure>
+                    <figure>
+                      <img src="${escapeHtml(item.after_image_url)}" alt="After cleaning by ${escapeHtml(item.user_name)}" />
+                      <figcaption>After</figcaption>
+                    </figure>
+                  </div>
+                  <p class="sub-meta">
+                    <strong>${escapeHtml(item.user_name)}</strong>
+                    <time datetime="${escapeHtml(item.cleaned_on)}">${formatShortDate(item.cleaned_on)}</time>
+                  </p>
+                </article>
+              `).join("");
+            }
+          }
+        } catch (e) {
+          console.error("Failed to load recent submissions:", e);
+        }
+
+        // 3. Load Leaderboard if submissions exist
+        try {
+          const lbRes = await fetch("/api/leaderboard");
+          if (lbRes.ok) {
+            const { data } = await lbRes.json();
+            if (data && data.length > 0) {
+              const lbEl = document.getElementById("leaderboard");
+              const topScore = Math.max(...data.map((u) => u.points), 10);
+              lbEl.innerHTML = data.map((u, idx) => {
+                const rank = idx + 1;
+                const heightPct = Math.max(18, Math.round((u.points / topScore) * 78));
+                const animIdx = Math.max(0, 4 - idx);
+                return `
+                  <li class="step ${rank === 1 ? "is-leader" : ""}">
+                    <div class="step-label">
+                      <span class="step-name">${escapeHtml(u.name)}</span>
+                      <span class="step-points">${u.points} pts</span>
+                    </div>
+                    <div class="step-bar" style="--h: ${heightPct}%; --i: ${animIdx}" aria-label="Rank ${rank}">
+                      ${rank}
+                    </div>
+                  </li>
+                `;
+              }).join("");
+            }
+          }
+        } catch (e) {
+          console.error("Failed to load leaderboard:", e);
+        }
+      }
+
+      initHomepage();
+    </script>
+
   </body>
 </html>

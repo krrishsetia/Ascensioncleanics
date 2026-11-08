@@ -3,6 +3,7 @@ from flask import Flask, jsonify, send_from_directory
 from flask_cors import CORS
 
 from config import config_by_name
+from db import init_db
 from routes import api_bp, auth_bp
 
 
@@ -11,18 +12,21 @@ def create_app(env_name: str = None) -> Flask:
     if not env_name:
         env_name = os.getenv("FLASK_ENV", "default")
 
+    # Point to Front-end directory containing homepage.html, submit.html, posts.html
     frontend_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "Front-end"))
     app = Flask(__name__, static_folder=frontend_dir, static_url_path="")
     app.config.from_object(config_by_name.get(env_name, config_by_name["default"]))
 
-    # supports_credentials=True is required for session cookies to persist across requests
+    # Ensure upload directory and SQLite database table exist
+    os.makedirs(app.config["UPLOAD_FOLDER"], exist_ok=True)
+    init_db(app)
+
     CORS(
         app,
         resources={r"/api/*": {"origins": app.config["CORS_ORIGINS"]}},
         supports_credentials=True,
     )
 
-    # Register API and Authentication blueprints
     app.register_blueprint(api_bp, url_prefix="/api")
     app.register_blueprint(auth_bp, url_prefix="/api/auth")
 
@@ -43,6 +47,10 @@ def register_error_handlers(app: Flask) -> None:
     @app.errorhandler(400)
     def bad_request(error):
         return jsonify({"error": "Bad Request", "message": str(error.description)}), 400
+
+    @app.errorhandler(401)
+    def unauthorized(error):
+        return jsonify({"error": "Unauthorized", "message": str(error.description)}), 401
 
     @app.errorhandler(404)
     def not_found(error):

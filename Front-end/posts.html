@@ -429,5 +429,164 @@
        Sign-in state: set <body data-auth="in"> for signed-in users, "out" otherwise.
        That shows .auth-in-only (like button, comment form) or .auth-out-only (sign-in links).
        The server must still reject likes/comments from signed-out users. Hiding the form is not enough. -->
+
+       <script>
+      function escapeHtml(str) {
+        const div = document.createElement("div");
+        div.textContent = str || "";
+        return div.innerHTML;
+      }
+
+      function formatFullDate(dateStr) {
+        const d = new Date(dateStr + "T00:00:00");
+        if (isNaN(d)) return escapeHtml(dateStr);
+        return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+      }
+
+      async function initPostsPage() {
+        const authBtn = document.getElementById("auth-btn");
+        const userNameEl = document.getElementById("user-name");
+
+        // 1. Check Auth Status
+        try {
+          const authRes = await fetch("/api/auth/user", { credentials: "include" });
+          if (authRes.ok) {
+            const { user } = await authRes.json();
+            document.body.dataset.auth = "in";
+            userNameEl.textContent = user.name || user.email;
+            userNameEl.hidden = false;
+            authBtn.textContent = "Sign out";
+            authBtn.href = "#";
+            authBtn.onclick = async (e) => {
+              e.preventDefault();
+              await fetch("/api/auth/logout", { method: "POST", credentials: "include" });
+              window.location.reload();
+            };
+          } else {
+            document.body.dataset.auth = "out";
+            authBtn.href = "/api/auth/login";
+          }
+        } catch (e) {
+          document.body.dataset.auth = "out";
+          authBtn.href = "/api/auth/login";
+        }
+
+        // 2. Fetch and Render Posts
+        const postsContainer = document.getElementById("posts");
+        try {
+          const res = await fetch("/api/posts", { credentials: "include" });
+          if (!res.ok) return;
+          const { data } = await res.json();
+
+          if (data && data.length > 0) {
+            const uploadedHtml = data.map((post) => {
+              const commentsCount = post.comments ? post.comments.length : 0;
+              const commentLabel = commentsCount === 1 ? "1 comment" : `${commentsCount} comments`;
+              const commentsListHtml = commentsCount > 0
+                ? `<ul class="comment-list">
+                    ${post.comments.map((c) => `
+                      <li class="comment">
+                        <p class="comment-meta"><strong>${escapeHtml(c.user_name)}</strong><time datetime="${escapeHtml(c.created_at)}">${escapeHtml(c.created_at)}</time></p>
+                        <p class="comment-text">${escapeHtml(c.body)}</p>
+                      </li>
+                    `).join("")}
+                   </ul>`
+                : `<p class="comment-empty">No comments yet.</p>`;
+
+              return `
+                <article class="sub-card post">
+                  <div class="ba-pair">
+                    <figure>
+                      <img src="${escapeHtml(post.before_image_url)}" alt="Before cleaning by ${escapeHtml(post.user_name)}" />
+                      <figcaption>Before</figcaption>
+                    </figure>
+                    <figure>
+                      <img src="${escapeHtml(post.after_image_url)}" alt="After cleaning by ${escapeHtml(post.user_name)}" />
+                      <figcaption>After</figcaption>
+                    </figure>
+                  </div>
+                  <p class="post-desc">${escapeHtml(post.description)}</p>
+                  <p class="sub-meta">
+                    <strong>${escapeHtml(post.user_name)}</strong>
+                    <time datetime="${escapeHtml(post.cleaned_on)}">${formatFullDate(post.cleaned_on)}</time>
+                  </p>
+                  <div class="post-social">
+                    <button class="like-btn auth-in-only" type="button" data-post-id="${post.id}" aria-pressed="${post.liked_by_me ? "true" : "false"}">
+                      <svg class="like-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.6 1.1 4.3 2.5h2c.7-1.4 2.2-2.5 4.3-2.5 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21z"/></svg>
+                      <span class="like-count">${post.like_count || 0}</span>
+                      <span class="visually-hidden"> likes, like this post</span>
+                    </button>
+                    <a class="like-btn auth-out-only" href="/api/auth/login" title="Sign in to like">
+                      <svg class="like-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21s-7.5-4.6-9.6-9.3C.9 8.3 3 4.5 6.7 4.5c2.1 0 3.6 1.1 4.3 2.5h2c.7-1.4 2.2-2.5 4.3-2.5 3.7 0 5.8 3.8 4.3 7.2C19.5 16.4 12 21 12 21z"/></svg>
+                      <span class="like-count">${post.like_count || 0}</span>
+                      <span class="visually-hidden"> likes, sign in to like this post</span>
+                    </a>
+                    <details class="comments">
+                      <summary>${commentLabel}</summary>
+                      <div class="comments-body">
+                        ${commentsListHtml}
+                        <form class="comment-form auth-in-only" data-post-id="${post.id}">
+                          <label class="visually-hidden" for="comment-${post.id}">Write a comment</label>
+                          <textarea id="comment-${post.id}" name="body" rows="2" maxlength="300" required placeholder="Write a comment"></textarea>
+                          <button class="btn btn-primary" type="submit">Post comment</button>
+                        </form>
+                        <p class="comment-signin auth-out-only"><a href="/api/auth/login">Sign in</a> to comment.</p>
+                      </div>
+                    </details>
+                  </div>
+                </article>
+              `;
+            }).join("");
+
+            // Prepend real database posts above the static sample cards (or replace with = uploadedHtml)
+            postsContainer.insertAdjacentHTML("afterbegin", uploadedHtml);
+          }
+        } catch (e) {
+          console.error("Error loading posts:", e);
+        }
+
+        // 3. Handle Like Button Clicks
+        postsContainer.addEventListener("click", async (e) => {
+          const btn = e.target.closest("button.like-btn[data-post-id]");
+          if (!btn) return;
+          const postId = btn.dataset.postId;
+          const res = await fetch(`/api/posts/${postId}/like`, {
+            method: "POST",
+            credentials: "include",
+          });
+          if (res.ok) {
+            const { liked, like_count } = await res.json();
+            btn.setAttribute("aria-pressed", liked ? "true" : "false");
+            btn.querySelector(".like-count").textContent = like_count;
+          }
+        });
+
+        // 4. Handle Comment Form Submissions
+        postsContainer.addEventListener("submit", async (e) => {
+          const form = e.target.closest("form.comment-form[data-post-id]");
+          if (!form) return;
+          e.preventDefault();
+          const postId = form.dataset.postId;
+          const textarea = form.querySelector("textarea");
+          const body = textarea.value.trim();
+          if (!body) return;
+
+          const res = await fetch(`/api/posts/${postId}/comments`, {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+              Accept: "application/json",
+            },
+            body: JSON.stringify({ body }),
+          });
+          if (res.ok) {
+            window.location.reload();
+          }
+        });
+      }
+
+      initPostsPage();
+    </script>
   </body>
 </html>

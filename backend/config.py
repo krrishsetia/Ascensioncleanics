@@ -2,7 +2,6 @@ import os
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Explicitly load .env from the project root (one directory above backend/)
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
 
@@ -17,7 +16,13 @@ class Config:
     PORT = int(os.getenv("PORT") or os.getenv("FLASK_PORT", 5000))
     CORS_ORIGINS = os.getenv("CORS_ORIGINS", f"http://{HOST}:{PORT}")
 
-    # Session cookie settings required for OAuth state persistence
+    # SQLite & File Uploads Configuration
+    DATABASE_PATH = os.getenv("DATABASE_PATH", str(BASE_DIR / "backend" / "cleanics.db"))
+    UPLOAD_FOLDER = os.getenv("UPLOAD_FOLDER", str(BASE_DIR / "backend" / "uploads"))
+    MAX_CONTENT_LENGTH = 16 * 1024 * 1024  # 16 MB max upload size
+    ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "webp", "gif"}
+
+    # Session cookie settings
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
 
@@ -31,14 +36,11 @@ class Config:
 
 
 class DevelopmentConfig(Config):
-    """Development-specific configuration."""
     DEBUG = True
-    # Allow oauthlib to operate over plain HTTP on 127.0.0.1
     os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "1"
 
 
 class ProductionConfig(Config):
-    """Production-specific configuration."""
     DEBUG = False
     SESSION_COOKIE_SECURE = True
 
